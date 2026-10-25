@@ -1,0 +1,2039 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Airspot Onboarding Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --primary: #1f5bff;
+    --primary-hover: #1749d6;
+    --primary-soft: #eaf0ff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --subtle: #94a3b8;
+    --border: #e6e8ee;
+    --surface: #ffffff;
+    --sidebar: #fafafb;
+    --ok: #16a34a;
+    --ok-soft: #e8f7ee;
+    --warn: #d97706;
+    --warn-soft: #fff6e5;
+    --err: #dc2626;
+    --err-soft: #fdecec;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: Inter, system-ui, sans-serif; color: var(--text); font-size: 15px;
+    background: linear-gradient(160deg, #e3f2ff 0%, #f5f9ff 35%, #f4fbf8 70%, #e6f8f1 100%);
+    background-attachment: fixed; min-height: 100vh;
+  }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: inherit; }
+
+  /* Shell */
+  .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 24px;
+    padding: 14px 28px; background: rgba(255,255,255,.75); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 24px; letter-spacing: -.02em; }
+  /* Supplied logo has a white wordmark, so crop to the icon and set the wordmark in dark text */
+  .logo-icon { width: 34px; height: 31px; overflow: hidden; flex: none; }
+  .logo-icon img { height: 31px; display: block; }
+  .swatch { position: relative; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; overflow: hidden; }
+  .swatch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: 0; padding: 0; }
+  textarea.input { resize: vertical; line-height: 1.5; min-height: 96px; }
+  .logo-tile { width: 72px; height: 72px; border-radius: 16px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 26px; overflow: hidden; border: 0; padding: 0; position: relative; }
+  .logo-tile img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+  .logo-tile .ov { position: absolute; inset: 0; background: rgba(15,23,42,.55); color: #fff; font-size: 11px; font-weight: 600; display: grid; place-items: center; opacity: 0; transition: opacity .15s; }
+  .logo-tile:hover .ov { opacity: 1; }
+  .render-canvas { width: 100%; aspect-ratio: 16/9; border-radius: 12px; background: #0b0f1a; display: block; }
+  .stepper { display: flex; gap: 6px; flex: 1; justify-content: center; flex-wrap: wrap; }
+  .stepper .s { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 13px; color: var(--subtle); }
+  .stepper .s .n { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 600; border: 1px solid var(--border); background: #fff; }
+  .stepper .s.done { color: var(--muted); }
+  .stepper .s.done .n { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .stepper .s.cur { color: var(--primary); background: var(--primary-soft); font-weight: 600; }
+  .stepper .s.cur .n { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .link-btn { background: none; border: 0; color: var(--muted); font-size: 14px; padding: 6px 8px; border-radius: 8px; }
+  .link-btn:hover { background: #f1f5f9; color: var(--text); }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 36px 24px 120px; }
+  .narrow { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 34px; letter-spacing: -.025em; margin: 0 0 8px; line-height: 1.15; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  h3 { font-size: 15px; margin: 0 0 10px; }
+  .lead { color: var(--muted); font-size: 16px; margin: 0 0 28px; line-height: 1.5; }
+  .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+  .sticky { position: sticky; top: 92px; }
+  .stack > * + * { margin-top: 16px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .between { justify-content: space-between; }
+
+  .btn { border: 1px solid var(--border); background: #fff; color: var(--text); padding: 11px 18px; border-radius: 12px; font-weight: 500; }
+  .btn:hover { border-color: #cbd5e1; }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn.primary:hover { background: var(--primary-hover); }
+  .btn.primary:disabled { background: #b8c8f7; border-color: #b8c8f7; cursor: not-allowed; }
+  .btn.lg { padding: 14px 22px; font-size: 16px; border-radius: 14px; }
+  .btn.block { width: 100%; }
+
+  .field { display: block; }
+  .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .field .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: #fff; outline: none; }
+  .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 8px 14px; font-size: 14px; color: var(--text); }
+  .chip:hover { border-color: #cbd5e1; }
+  .chip.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); font-weight: 500; }
+  .chip.sugg::before { content: "✦ "; color: #a78bfa; }
+
+  .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .option { text-align: left; border: 1.5px solid var(--border); background: #fff; border-radius: 16px; padding: 18px; }
+  .option:hover { border-color: #cbd5e1; }
+  .option.on { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .option .ico { font-size: 22px; margin-bottom: 8px; }
+  .option .t { font-weight: 600; margin-bottom: 4px; }
+  .option .d { color: var(--muted); font-size: 14px; line-height: 1.45; }
+  .option .see { margin-top: 10px; font-size: 12px; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 10px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+  .tag.ok { background: var(--ok-soft); color: var(--ok); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .tag.grey { background: #f1f5f9; color: var(--muted); }
+
+  .notice { border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.45; }
+  .notice.ok { background: var(--ok-soft); color: #14532d; }
+  .notice.warn { background: var(--warn-soft); color: #7c4a03; }
+  .notice.err { background: var(--err-soft); color: #7f1d1d; }
+  .notice.info { background: var(--primary-soft); color: #1e3a8a; }
+
+  .stat { padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .stat:last-child { border-bottom: 0; }
+  .stat .k { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .stat .v { font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; }
+  .meter { height: 8px; border-radius: 999px; background: #eef2f7; overflow: hidden; margin-top: 8px; }
+  .meter > div { height: 100%; border-radius: 999px; transition: width .3s; }
+
+  .footer-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,.9); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border); padding: 14px 28px; display: flex; justify-content: space-between; align-items: center; z-index: 9; }
+
+  .video { aspect-ratio: 16/9; border-radius: 18px; overflow: hidden; position: relative; display: grid; place-items: center;
+    background: radial-gradient(circle at 30% 30%, #3b82f6, #1e1b4b 70%); color: #fff; }
+  .play { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,.95); color: var(--primary); border: 0; font-size: 26px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .vbar { position: absolute; left: 0; bottom: 0; height: 5px; background: #38bdf8; transition: width .2s linear; }
+  .vcap { position: absolute; left: 20px; bottom: 18px; font-size: 14px; opacity: .9; }
+
+  .tv { background: #0b0f1a; border-radius: 14px; padding: 10px; box-shadow: var(--shadow); }
+  .tv-screen { aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 22px; }
+  .tv-screen video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .tv-stand { width: 30%; height: 8px; margin: 8px auto 0; border-radius: 0 0 8px 8px; background: #1f2937; }
+
+  .summary-row { display: grid; grid-template-columns: 140px 1fr auto; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); align-items: start; }
+  .summary-row:last-child { border-bottom: 0; }
+  .summary-row .k { color: var(--muted); font-size: 14px; }
+  .summary-row .edit { font-size: 13px; color: var(--primary); background: none; border: 0; }
+
+  .drop { border: 2px dashed #cbd5e1; border-radius: 16px; padding: 28px; text-align: center; background: #fbfcfe; }
+  .check { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; font-size: 14px; }
+  .check .i { width: 20px; flex: none; text-align: center; }
+
+  .timeline { list-style: none; padding: 0; margin: 0; }
+  .timeline li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding-bottom: 18px; position: relative; }
+  .timeline li::before { content: ""; position: absolute; left: 13px; top: 26px; bottom: 0; width: 2px; background: var(--border); }
+  .timeline li:last-child::before { display: none; }
+  .timeline .dot { width: 28px; height: 28px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+
+  .auth { max-width: 440px; margin: 40px auto 0; }
+  .divider { display: flex; align-items: center; gap: 12px; color: var(--subtle); font-size: 13px; margin: 18px 0; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+  /* Prototype control panel (not part of the product UI) */
+  .proto-fab { position: fixed; right: 20px; bottom: 84px; z-index: 30; background: #111827; color: #fff; border: 0; border-radius: 999px; padding: 10px 16px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  .proto { position: fixed; right: 20px; bottom: 132px; z-index: 30; width: 360px; max-height: 70vh; overflow: auto; background: #111827; color: #e5e7eb; border-radius: 16px; padding: 18px; font-size: 13px; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
+  .proto h4 { margin: 0 0 10px; color: #fff; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .proto .seg { display: flex; background: #1f2937; border-radius: 10px; padding: 3px; margin-bottom: 8px; }
+  .proto .seg button { flex: 1; background: none; border: 0; color: #9ca3af; padding: 7px; border-radius: 8px; font-size: 12px; }
+  .proto .seg button.on { background: #374151; color: #fff; }
+  .proto .ev { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; padding: 5px 0; border-bottom: 1px solid #1f2937; color: #a5f3fc; }
+  .proto .ev span { color: #6b7280; }
+  .proto button.pbtn { background: #1f2937; color: #e5e7eb; border: 0; border-radius: 8px; padding: 7px 10px; font-size: 12px; }
+
+  /* Dashboard */
+  .dash { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  .side { background: var(--sidebar); border-right: 1px solid var(--border); padding: 20px 14px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 2px; }
+  .side .nav { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--text); border: 0; background: none; width: 100%; text-align: left; font-size: 15px; }
+  .side .nav:hover { background: #f1f5f9; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover td { background: #f8fafc; }
+  .btn.sm { padding: 7px 12px; font-size: 13px; border-radius: 10px; white-space: nowrap; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+  .kpis .card { padding: 6px 20px; }
+  .sim { display: flex; align-items: center; gap: 14px; margin-top: 20px; background: #111827; color: #e5e7eb; border-radius: 12px; padding: 10px 16px; font-size: 13px; }
+  .sim input { flex: 1; accent-color: #38bdf8; }
+  .seg-toggle { position: fixed; top: 16px; right: 20px; z-index: 20; display: flex; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 3px; box-shadow: var(--shadow); }
+  .seg-toggle button { border: 0; background: none; padding: 7px 14px; border-radius: 9px; font-size: 13px; color: var(--muted); }
+  .seg-toggle button.on { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+  .step-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .modal-bg { position: fixed; inset: 0; z-index: 50; background: rgba(15,23,42,.45); display: grid; place-items: center; padding: 16px; animation: fade .15s ease; }
+  .modal { width: 100%; max-width: 460px; }
+  .btn.danger { background: var(--err); border-color: var(--err); color: #fff; }
+  .btn.danger-outline { color: var(--err); border-color: #fecaca; background: #fff; }
+  .btn.icon { padding: 7px 10px; }
+  .btn.icon:hover { border-color: #fecaca; background: var(--err-soft); }
+  .detail-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; margin-top: 16px; align-items: start; }
+  .thumb { width: 72px; height: 40px; border-radius: 8px; flex: none; overflow: hidden; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #1f5bff, #38bdf8); }
+  .thumb video { width: 100%; height: 100%; object-fit: cover; }
+  .dot-l { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 13px; }
+  .link-btn.on { color: var(--primary); font-weight: 600; }
+  .budget-slider { padding-top: 4px; }
+  .slider-wrap { position: relative; padding: 10px 0 30px; }
+  .slider-wrap input { width: 100%; accent-color: var(--primary); cursor: pointer; }
+  .slider-wrap .mark { position: absolute; top: 36px; transform: translateX(-50%); font-size: 11px; color: var(--subtle); white-space: nowrap; }
+  .slider-wrap .mark::before { content: ""; position: absolute; left: 50%; top: -9px; width: 1px; height: 6px; background: #cbd5e1; }
+  .slider-wrap .mark.on { color: var(--primary); font-weight: 600; }
+  .coverage { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .step-card.current { border: 2px solid var(--ok); box-shadow: 0 0 0 4px var(--ok-soft), var(--shadow); }
+  .seg.dark { display: flex; background: #1f2937; border-radius: 10px; padding: 3px; margin-left: auto; }
+  .seg.dark button { background: none; border: 0; color: #9ca3af; padding: 6px 12px; border-radius: 8px; font-size: 12px; }
+  .seg.dark button.on { background: #374151; color: #fff; }
+  .weeks td, .weeks th { padding: 12px; }
+  .step-ico { width: 48px; height: 48px; border-radius: 14px; background: var(--primary-soft); display: grid; place-items: center; font-size: 24px; }
+  .side .nav.on { background: var(--primary-soft); color: var(--primary); font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 16px 12px; border-bottom: 1px solid var(--border); }
+
+  .spinner { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--primary-soft); border-top-color: var(--primary); animation: spin 0.8s linear infinite; margin: 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fade { animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 860px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .sticky { position: static; }
+    .options { grid-template-columns: 1fr; }
+    .stepper { display: none; }
+    .dash { grid-template-columns: 1fr; }
+    .kpis, .step-cards { grid-template-columns: 1fr 1fr; }
+    .review-side { order: -1; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .seg-toggle { top: auto; bottom: 84px; left: 16px; right: auto; }
+    .side { display: none; }
+    h1 { font-size: 26px; }
+    main { padding: 24px 16px 120px; }
+    .topbar, .footer-nav { padding: 12px 16px; }
+    .proto { width: calc(100% - 32px); right: 16px; }
+    .summary-row { grid-template-columns: 1fr auto; }
+    .summary-row .k { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+const { useState, useEffect, useRef, useMemo } = React;
+const html = htm.bind(React.createElement);
+
+/* ---------- Assumptions (illustrative, tune with real DSP data) ---------- */
+const CPM = 32;              // USD per 1,000 impressions
+const MIN_DAILY = 50;        // Airspot minimum daily budget
+const TARGET_FREQ = 3;       // impressions per household over the flight
+const CTV_SHARE = 0.7;       // share of households reachable on CTV
+const APPROVAL_DAYS = 2;     // creative review lead time
+
+const COUNTRIES = {
+  SE: { name: "Sweden", hh: 4.8e6, cities: { Stockholm: 1.1e6, Gothenburg: 0.5e6, "Malmö": 0.3e6, Uppsala: 0.1e6 },
+    regions: { "Stockholm County": { hh: 1.2e6, cities: ["Stockholm"] }, "Västra Götaland": { hh: 0.85e6, cities: ["Gothenburg"] },
+      "Skåne": { hh: 0.65e6, cities: ["Malmö"] }, "Uppsala County": { hh: 0.18e6, cities: ["Uppsala"] } } },
+  DE: { name: "Germany", hh: 41e6, cities: { Berlin: 2e6, Hamburg: 1e6, Munich: 0.8e6, Cologne: 0.55e6 },
+    regions: { Berlin: { hh: 2e6, cities: ["Berlin"] }, Hamburg: { hh: 1e6, cities: ["Hamburg"] },
+      Bavaria: { hh: 6.5e6, cities: ["Munich"] }, "North Rhine-Westphalia": { hh: 8.9e6, cities: ["Cologne"] } } },
+  GB: { name: "United Kingdom", hh: 28e6, cities: { London: 3.6e6, Manchester: 1.2e6, Birmingham: 1.1e6, Leeds: 0.75e6 },
+    regions: { "Greater London": { hh: 3.6e6, cities: ["London"] }, "North West": { hh: 3.1e6, cities: ["Manchester"] },
+      "West Midlands": { hh: 2.4e6, cities: ["Birmingham"] }, "Yorkshire": { hh: 2.3e6, cities: ["Leeds"] } } },
+  US: { name: "United States", hh: 131e6, cities: { "New York": 7.5e6, "Los Angeles": 4.6e6, Chicago: 3.5e6, Austin: 0.9e6 },
+    regions: { "New York State": { hh: 7.8e6, cities: ["New York"] }, California: { hh: 13.4e6, cities: ["Los Angeles"] },
+      Illinois: { hh: 4.9e6, cities: ["Chicago"] }, Texas: { hh: 10.5e6, cities: ["Austin"] } } },
+};
+const AGES = { "18–34": 0.3, "35–54": 0.38, "55+": 0.32 };
+const INCOME = { Any: 1, "Middle+": 0.45, High: 0.2 };
+const KIDS = { Any: 1, "With kids": 0.3, "No kids": 0.7 };
+const GENDER = { All: 1, Women: 0.51, Men: 0.49 };
+
+const CATEGORIES = {
+  "Food & drink": ["Coffee lovers", "Foodies", "Healthy eating", "Local shoppers", "Home cooks"],
+  "Health & wellness": ["Fitness enthusiasts", "Healthy living", "Wellness seekers", "Parents", "Outdoor & sports"],
+  "Fashion & retail": ["Fashion forward", "Sustainable shoppers", "Online shoppers", "Luxury buyers", "Deal seekers"],
+  "Home & living": ["Homeowners", "Interior design", "DIY & garden", "New movers", "Families"],
+  "Services & B2B": ["Business decision makers", "Small business owners", "Tech early adopters", "Professionals", "Finance & investing"],
+};
+const CATEGORY_KEYWORDS = [
+  ["Food & drink", /coffee|brew|cafe|food|bake|eat|kitchen|bar|wine|beer/i],
+  ["Health & wellness", /health|fit|gym|well|care|clinic|yoga|nutri/i],
+  ["Fashion & retail", /shop|wear|fashion|style|store|retro|tale|boutique/i],
+  ["Home & living", /home|house|living|garden|furni|decor/i],
+];
+
+const GOALS = [
+  { id: "aware", ico: "📣", t: "Get my brand known", d: "Put your business on the biggest screen in the house, in front of the right households.", see: "You'll see: households reached, completed views, frequency" },
+  { id: "traffic", ico: "🌐", t: "Drive website visits", d: "Reach households, then track how many of them visit your site afterwards.", see: "You'll see: site visits from exposed households (needs the Airspot pixel)" },
+  { id: "offer", ico: "🏷️", t: "Promote an offer or launch", d: "Tell people about a sale, an opening or a new product with a time limit.", see: "You'll see: reach plus promo-code / QR redemptions you add to the ad" },
+  { id: "test", ico: "🧪", t: "Just testing TV", d: "Try the channel with a small budget and learn what TV can do for you.", see: "You'll see: a simple test report with benchmarks for your category" },
+];
+
+const STEP_META = {
+  signup:   { label: null },
+  payment:  { label: "Payment" },
+  welcome:  { label: null },
+  business: { label: "Brand" },
+  goal:     { label: "Goal" },
+  audience: { label: "Audience" },
+  budget:   { label: "Budget" },
+  creative: { label: "Video" },
+  schedule: { label: "Dates" },
+  review:   { label: "Review" },
+  success:  { label: null },
+};
+const FLOWS = {
+  A: ["signup", "payment", "welcome", "business", "goal", "audience", "budget", "creative", "schedule", "review", "success"],
+  B: ["signup", "welcome", "business", "goal", "audience", "budget", "creative", "schedule", "review", "payment", "success"],
+};
+
+/* ---------- Helpers ---------- */
+const fmtUSD = (n) => "$" + Math.round(n).toLocaleString("en-US");
+const fmtNum = (n) => {
+  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M";
+  if (n >= 1e3) return Math.round(n / 1e3).toLocaleString("en-US") + "k";
+  return Math.round(n).toLocaleString("en-US");
+};
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const addBusinessDays = (d, n) => { let x = new Date(d); while (n > 0) { x = addDays(x, 1); if (x.getDay() % 6 !== 0) n--; } return x; };
+const isoDate = (d) => d.toISOString().slice(0, 10);
+const niceDate = (s) => new Date(s + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const titleCase = (s) => s.replace(/[-_.]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+const hslToHex = (h, s, l) => {
+  s /= 100; l /= 100;
+  const f = (n) => { const k = (n + h / 30) % 12; const c = l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)); return Math.round(255 * c).toString(16).padStart(2, "0"); };
+  return "#" + f(0) + f(8) + f(4);
+};
+// Campaign length: a custom end date wins over the weeks chosen on the Budget step
+const durDays = (d) => d.endDate && d.startDate
+  ? Math.max(1, Math.round((new Date(d.endDate + "T12:00:00") - new Date(d.startDate + "T12:00:00")) / 864e5) + 1)
+  : d.weeks * 7;
+const fmtDuration = (days) => days % 7 === 0 ? `${days / 7} week${days === 7 ? "" : "s"}` : `${days} days`;
+const endDateOf = (d) => isoDate(addDays(new Date(d.startDate + "T12:00:00"), durDays(d) - 1));
+
+/* ---------- Video helpers ---------- */
+const EXAMPLE_SECONDS = 15;
+
+// Reads duration + resolution from a video in the browser (nothing is uploaded)
+function probeVideo(url) {
+  return new Promise((resolve) => {
+    const v = document.createElement("video");
+    v.preload = "metadata"; v.muted = true;
+    const finish = () => resolve({ duration: v.duration, width: v.videoWidth, height: v.videoHeight });
+    v.onloadedmetadata = () => {
+      if (Number.isFinite(v.duration)) return finish();
+      // Recorded WebM often has no duration header: seek to the end to force it
+      v.ontimeupdate = () => { v.ontimeupdate = null; finish(); };
+      v.currentTime = 1e101;
+    };
+    v.onerror = () => resolve({ duration: 0, width: 0, height: 0 });
+    v.src = url;
+  });
+}
+
+function wrapText(ctx, text, maxW) {
+  const lines = []; let line = "";
+  for (const w of text.split(" ")) {
+    const t = line ? line + " " + w : w;
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawAdFrame(ctx, W, H, t, brand, logo) {
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, brand.colors[0]); g.addColorStop(1, brand.colors[1]);
+  ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(255,255,255,.08)";
+  ctx.beginPath(); ctx.arc(W * (0.2 + 0.03 * t), H * 0.3, 520, 0, Math.PI * 2); ctx.fill();
+  const fade = (a, b) => Math.max(0, Math.min(1, (t - a) / 0.6, (b - t) / 0.6));
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 18; // keeps white text legible on light brand colours (e.g. yellow)
+
+  // 0–4s: logo + name
+  let a = fade(0, 4);
+  if (a > 0) {
+    ctx.globalAlpha = a;
+    const s = 0.9 + 0.1 * Math.min(1, t / 1.5), size = 280 * s, x = W / 2 - size / 2, y = H / 2 - 120 - size / 2;
+    ctx.fillStyle = logo ? "#fff" : "rgba(255,255,255,.18)";
+    ctx.beginPath(); ctx.roundRect(x, y, size, size, 56); ctx.fill();
+    if (logo) {
+      const r = Math.min((size - 48) / logo.width, (size - 48) / logo.height);
+      ctx.drawImage(logo, W / 2 - (logo.width * r) / 2, y + size / 2 - (logo.height * r) / 2, logo.width * r, logo.height * r);
+    } else {
+      ctx.fillStyle = "#fff"; ctx.font = `800 ${150 * s}px Inter, sans-serif`; ctx.fillText(brand.name[0], W / 2, H / 2 - 120);
+    }
+    ctx.fillStyle = "#fff"; ctx.font = `800 ${120 * s}px Inter, sans-serif`; ctx.fillText(brand.name, W / 2, H / 2 + 170);
+  }
+  // 4–9s: what you do
+  a = fade(4, 9);
+  if (a > 0) {
+    ctx.globalAlpha = a; ctx.fillStyle = "#fff"; ctx.font = "700 84px Inter, sans-serif";
+    const lines = wrapText(ctx, brand.description.replace(/\s*\(.*?\)\s*/g, " ").trim(), W * 0.72).slice(0, 3);
+    lines.forEach((l, i) => ctx.fillText(l, W / 2, H / 2 + (i - (lines.length - 1) / 2) * 112));
+  }
+  // 9–12.5s: on TV
+  a = fade(9, 12.5);
+  if (a > 0) {
+    ctx.globalAlpha = a; ctx.fillStyle = "#fff";
+    ctx.font = "600 56px Inter, sans-serif"; ctx.fillText(brand.category.toUpperCase(), W / 2, H / 2 - 90);
+    ctx.font = "800 120px Inter, sans-serif"; ctx.fillText("Now on TV near you", W / 2, H / 2 + 50);
+  }
+  // 12.5s–end: call to action
+  a = Math.max(0, Math.min(1, (t - 12.5) / 0.6));
+  if (a > 0) {
+    ctx.globalAlpha = a; ctx.fillStyle = "#fff";
+    ctx.font = "600 60px Inter, sans-serif"; ctx.fillText("Visit", W / 2, H / 2 - 100);
+    ctx.font = "800 130px Inter, sans-serif"; ctx.fillText(brand.host, W / 2, H / 2 + 40);
+  }
+  ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+}
+
+// Records a real Full HD WebM of the brand-kit ad in real time
+async function renderExampleAd(brand, seconds, canvas, onProgress) {
+  const W = 1920, H = 1080;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  const logo = brand.logoUrl ? await new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = brand.logoUrl; }) : null;
+  drawAdFrame(ctx, W, H, 0, brand, logo);
+  const mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find((m) => MediaRecorder.isTypeSupported(m));
+  const rec = new MediaRecorder(canvas.captureStream(30), { mimeType: mime, videoBitsPerSecond: 5e6 });
+  const chunks = [];
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  const stopped = new Promise((r) => (rec.onstop = r));
+  rec.start(500);
+  const t0 = performance.now();
+  await new Promise((resolve) => {
+    const id = setInterval(() => {
+      const t = (performance.now() - t0) / 1000;
+      drawAdFrame(ctx, W, H, Math.min(t, seconds), brand, logo);
+      onProgress(Math.min(1, t / seconds));
+      if (t >= seconds) { clearInterval(id); resolve(); }
+    }, 1000 / 30);
+  });
+  rec.stop();
+  await stopped;
+  return new Blob(chunks, { type: "video/webm" });
+}
+
+// Demo advertiser: brand kit as it would be pulled from the site
+const DEMO_SITE = "ikea.se";
+const IKEA_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5OC4zNiIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDk4LjM2IDQwIj48cGF0aCBmaWxsPSIjMDA1OGEzIiBkPSJNOTguMzYgNDBIMFYwaDk4LjM2djQwWiIvPjxwYXRoIGZpbGw9IiNmZmRiMDAiIGQ9Ik0xLjkyIDIwYzAgOS42NiAxOS44MSAxNy42NyA0Ny4yNiAxNy42N1M5Ni40NCAyOS42NiA5Ni40NCAyMCA3Ni42MyAyLjMzIDQ5LjE4IDIuMzMgMS45MiAxMC4zNCAxLjkyIDIwWiIvPjxwYXRoIGZpbGw9IiMwMDU4YWIiIGQ9Ik00Ni4zOSAyNS42N2MuMjkuNDMuNjMuODMgMS4wNCAxLjI1SDM2Ljc5YzAtLjQyLS40LTEuMjgtLjg2LTEuOTZsLTIuOS00LjM4djUuMDljMCAuNDIgMCAuODMuMjEgMS4yNWgtOC44N2MuMjEtLjQyLjIxLS44My4yMS0xLjI1di0xMi4xYzAtLjQyIDAtLjgzLS4yMS0xLjI1aDguODdjLS4yMS40Mi0uMjEuODMtLjIxIDEuMjV2NS4yOHMyLjg0LTMuNjggMy40OC00LjU1Yy40OS0uNjYgMS4xMS0xLjU3IDEuMTEtMS45OGg5LjI0Yy0uNjQuNDItMS4zNCAxLjE5LTEuOTIgMS44OWwtMy4zOSA0LjEzIDQuODIgNy4zM1ptMi43OS0xMi4xdjEyLjFjMCAuNDIgMCAuODMtLjIxIDEuMjVoMTcuMTF2LTQuMDVjLS40Mi4yMS0uODMuMjEtMS4yNS4yMWgtNy4ydi0xLjkyaDYuOTJ2LTMuMDdoLTYuOTJ2LTEuOTJoNy4yYy40MiAwIC44MyAwIDEuMjUuMnYtNC4wNUg0OC45N2MuMjEuNDIuMjEuODMuMjEgMS4yNVptNDAuNjMgMTIuMDljLjE2LjQyLjMyLjg0LjY5IDEuMjZoLTkuMjhjLjA1LS40Mi0uMTItLjgzLS4yOC0xLjI1bC0uMzMtLjg0LS4wOC0uMjJoLTUuMzRsLS4wOC4yMi0uMy44NGMtLjE1LjQyLS4zLjgzLS4yNCAxLjI1aC03LjMyYy4zNi0uNDIuNTEtLjgzLjY2LTEuMjVsNC4zOS0xMi4xYy4xNS0uNDIuMy0uODMuMjUtMS4yNWgxMi4zNmMtLjExLjQyLjExLjgzLjI3IDEuMjVsNC42MyAxMi4wOVptLTEwLjQ3LTQuMTItMS4yOS0zLjM4YTkuNCA5LjQgMCAwIDEtLjI5LS45NnMtLjEuNTQtLjI1Ljk2bC0xLjIzIDMuMzhoMy4wNVptLTU5LjE1LTkuMjJoLTkuNjRjLjIxLjQyLjIxLjgzLjIxIDEuMjV2MTIuMWMwIC40MiAwIC44My0uMjEgMS4yNWg5LjY0Yy0uMjEtLjQyLS4yMS0uODMtLjIxLTEuMjV2LTEyLjFjMC0uNDIgMC0uODMuMjEtMS4yNVptNjYuNjQgMS4xNWMwLTEuMTIuODEtMS45MiAxLjkyLTEuOTJzMS45Mi44MSAxLjkyIDEuOTItLjgxIDEuOTItMS45MiAxLjkyLTEuOTItLjgxLTEuOTItMS45MlptLjM5IDBjMCAuODUuNjQgMS41NCAxLjU0IDEuNTQuODUgMCAxLjU0LS42NCAxLjU0LTEuNTQgMC0uODUtLjY0LTEuNTQtMS41NC0xLjU0cy0xLjU0LjY0LTEuNTQgMS41NFptMS4xNSAxLjE1aC0uMzR2LTIuM2guODZjLjQgMCAuNzIuMzUuNzIuNzUgMCAuMjgtLjE3LjU2LS40MS42N2wuNS44OWgtLjM4bC0uNDYtLjgxaC0uNXYuODFabTAtMS4xNWguNDdjLjI0IDAgLjQzLS4xNy40My0uNDFzLS4xOS0uNDEtLjQzLS40MWgtLjQ3di44MVoiLz48L3N2Zz4K"; // assets/ikea/ikea.svg, from ikea.com
+const KNOWN_BRANDS = {
+  "ikea.se": {
+    name: "IKEA", category: "Home & living", country: "SE",
+    colors: ["#0058A3", "#FFDB00", "#FFFFFF"], logoUrl: IKEA_LOGO,
+    description: "Affordable, well-designed furniture and home furnishings, with stores across Sweden and a full range online.",
+  },
+};
+
+function brandFromUrl(url) {
+  const host = (url || "").replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[\/?#]/)[0] || "yourbrand.com";
+  if (KNOWN_BRANDS[host]) return { host, ...KNOWN_BRANDS[host] };
+  const stem = host.split(".")[0];
+  const name = titleCase(stem.replace(/([a-z])([A-Z])/g, "$1 $2"));
+  const cat = (CATEGORY_KEYWORDS.find(([, re]) => re.test(host)) || ["Fashion & retail"])[0];
+  const tld = host.split(".").pop();
+  const country = { se: "SE", de: "DE", uk: "GB", us: "US" }[tld] || "SE";
+  let h = 0; for (const c of host) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return {
+    host, name, category: cat, country,
+    colors: [hslToHex(h, 70, 45), hslToHex((h + 40) % 360, 75, 60), hslToHex((h + 200) % 360, 30, 92)],
+    logoUrl: null,
+    description: `${name} is a ${cat.toLowerCase()} brand. (Pulled from ${host}, so edit if it's not quite right.)`,
+  };
+}
+
+function audienceSize(d) {
+  const c = COUNTRIES[d.country];
+  const base = d.cities.length ? d.cities.reduce((s, k) => s + c.cities[k], 0) : d.region ? c.regions[d.region].hh : c.hh;
+  const age = d.ages.length ? d.ages.reduce((s, k) => s + AGES[k], 0) : 1;
+  const interest = d.interests.length ? Math.min(0.7, 0.35 + 0.08 * (d.interests.length - 1)) : 1;
+  return base * CTV_SHARE * age * INCOME[d.income] * KIDS[d.kids] * GENDER[d.gender || "All"] * interest;
+}
+
+function forecast(d) {
+  const audience = audienceSize(d);
+  const days = durDays(d);
+  const total = d.daily * days;
+  const impressions = (total / CPM) * 1000;
+  const households = Math.min(audience * 0.85, impressions / TARGET_FREQ);
+  const frequency = households ? impressions / households : 0;
+  const dailyCapacity = audience * 0.12; // impressions/day the audience can realistically absorb
+  const dailyNeed = (d.daily / CPM) * 1000;
+  return { audience, days, total, impressions, households, frequency, dailyCapacity, dailyNeed, deliverable: dailyNeed <= dailyCapacity };
+}
+
+/* ---------- Analytics (mock) ---------- */
+let pushEvent = () => {};
+function track(name, props = {}) {
+  const e = { name, props, t: new Date().toLocaleTimeString("en-GB") };
+  console.log("[track]", name, props);
+  pushEvent(e);
+}
+
+/* ---------- App ---------- */
+const INITIAL = {
+  email: "", website: "", password: "",
+  brand: null,
+  goal: null,
+  country: "SE", region: null, cities: [], ages: [], gender: "All", income: "Any", kids: "Any", interests: [],
+  budgetMode: null, testBudget: 1400, daily: 50, weeks: 4, tier: null,
+  creative: null, // { status: 'ok'|'fail'|'later', name, duration, width, height, url, issues: [] }
+  startDate: null, endDate: null,
+  cardAdded: false,
+  draftId: null,
+};
+const STORE_KEY = "airspot_proto_campaigns_v4";
+const MEDIA_KEY = "airspot_proto_media_v4";
+
+// Two booked demo campaigns so Reporting and the Library have something to show
+function seedData() {
+  const brand = brandFromUrl(DEMO_SITE);
+  const today = new Date();
+  const make = (id, o) => {
+    const media = { id: "m" + id, name: o.file, duration: o.dur, width: 1920, height: 1080, url: null, source: "sample",
+      addedAt: isoDate(addDays(today, o.startOffset - 6)), brand: brand.name };
+    const d = { ...INITIAL, email: "demo@ikea.se", website: DEMO_SITE, brand, country: "SE", cities: o.cities,
+      goal: o.goal, budgetMode: "have", daily: o.daily, weeks: o.weeks, cardAdded: true, draftId: id,
+      startDate: isoDate(addDays(today, o.startOffset)),
+      creative: { status: "ok", name: o.file, duration: o.dur, width: 1920, height: 1080, url: null, issues: [], mediaId: media.id } };
+    return { c: { ...summarize(d, "In review", null), name: o.name, demo: true }, media };
+  };
+  const live = make(1001, { name: "IKEA: Autumn kitchen offer", goal: "offer", daily: 150, weeks: 4, startOffset: -18,
+    cities: ["Stockholm", "Uppsala"], file: "ikea_autumn_kitchen_30s.mp4", dur: 30 });
+  const test = make(1002, { name: "IKEA: First TV test", goal: "test", daily: 50, weeks: 4, startOffset: -45,
+    cities: ["Stockholm"], file: "ikea_brand_intro_15s.mp4", dur: 15 });
+  return { campaigns: [live.c, test.c], media: [live.media, test.media] };
+}
+const SEED = seedData();
+
+// Blob URLs (uploads, logos) don't survive a reload, so drop them when restoring saved state
+const dropBlob = (u) => (u && u.startsWith("blob:") ? null : u || null);
+function loadSaved(key) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key));
+    if (!Array.isArray(v)) return null;
+    return v.map((x) => x.data
+      ? { ...x, data: { ...x.data, brand: x.data.brand && { ...x.data.brand, logoUrl: dropBlob(x.data.brand.logoUrl) }, creative: x.data.creative && { ...x.data.creative, url: dropBlob(x.data.creative.url) } } }
+      : { ...x, url: dropBlob(x.url) });
+  } catch { return null; }
+}
+
+function App() {
+  const [variant, setVariant] = useState("B");
+  const [billing, setBilling] = useState("progressive"); // A/B: advance | progressive
+  const [stepIdx, setStepIdx] = useState(0);
+  const [d, setD] = useState(INITIAL);
+  const [events, setEvents] = useState([]);
+  const [panel, setPanel] = useState(false);
+  const [view, setView] = useState("flow"); // flow | home | campaigns | campaign | library | reporting | admin | settings
+  const [selected, setSelected] = useState(null); // campaign id shown on the results page
+  const [flash, setFlash] = useState(null);
+  const [returnTo, setReturnTo] = useState(null);
+  const [campaigns, setCampaigns] = useState(() => loadSaved(STORE_KEY) || SEED.campaigns);
+  const [media, setMedia] = useState(() => loadSaved(MEDIA_KEY) || SEED.media);
+  const [users, setUsers] = useState(DEFAULT_USERS);
+  useEffect(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(campaigns)); } catch {} }, [campaigns]);
+  useEffect(() => { try { localStorage.setItem(MEDIA_KEY, JSON.stringify(media)); } catch {} }, [media]);
+
+  // Videos that pass the TV checks go to the Library; reusing the same file returns its existing id
+  const addMedia = (m) => {
+    const existing = media.find((x) => x.name === m.name && Math.round(x.duration) === Math.round(m.duration));
+    if (existing) {
+      if (m.url && !existing.url) setMedia((xs) => xs.map((x) => (x.id === existing.id ? { ...x, url: m.url } : x)));
+      return existing.id;
+    }
+    const id = "m" + Date.now();
+    setMedia((xs) => [{ id, addedAt: isoDate(new Date()), brand: d.brand ? d.brand.name : "—", ...m }, ...xs]);
+    track("media_added", { source: m.source });
+    return id;
+  };
+  const removeMedia = (id) => {
+    setMedia((xs) => xs.filter((x) => x.id !== id));
+    setCampaigns((xs) => xs.map((c) => (c.status === "Draft" && c.data?.creative?.mediaId === id
+      ? { ...c, creative: null, data: { ...c.data, creative: null } } : c)));
+    track("media_deleted");
+  };
+  const removeCampaign = (id) => { setCampaigns((xs) => xs.filter((c) => c.id !== id)); track("campaign_deleted"); };
+  const stopCampaign = (id) => {
+    setCampaigns((xs) => xs.map((c) => (c.id === id ? { ...c, status: "Stopped", stoppedAt: isoDate(new Date()) } : c)));
+    track("campaign_stopped");
+  };
+
+  pushEvent = (e) => setEvents((xs) => [e, ...xs].slice(0, 60));
+  const flow = FLOWS[variant];
+  const step = flow[stepIdx];
+  const set = (patch) => setD((x) => ({ ...x, ...patch }));
+
+  useEffect(() => { track("step_viewed", { step, index: stepIdx, variant }); window.scrollTo(0, 0); }, [step, variant]);
+
+  const go = (target) => {
+    const i = typeof target === "number" ? target : flow.indexOf(target);
+    if (i >= 0) setStepIdx(i);
+  };
+  const next = () => {
+    track("step_completed", { step, variant });
+    if (returnTo) { const r = returnTo; setReturnTo(null); return go(r); }
+    go(stepIdx + 1);
+  };
+  const back = () => go(Math.max(0, stepIdx - 1));
+  const editFromReview = (s) => { setReturnTo("review"); go(s); };
+
+  // Prototype panel jumps: fill in any demo data later steps need, keeping what's already entered
+  const jump = (s) => {
+    setView("flow");
+    if (flow.indexOf(s) > flow.indexOf("business")) {
+      const brand = d.brand || brandFromUrl(DEMO_SITE);
+      const demo = {
+        email: "demo@ikea.se", website: DEMO_SITE, password: "demo1234", brand,
+        goal: "test", budgetMode: "help", cardAdded: variant === "A",
+        creative: { status: "ok", name: "spring_promo_30s.mp4", duration: 30, width: 1920, height: 1080, url: null, issues: [] },
+        startDate: isoDate(addBusinessDays(new Date(), APPROVAL_DAYS)),
+      };
+      const patch = Object.fromEntries(Object.entries(demo).filter(([k]) => !d[k]));
+      if (!d.brand) Object.assign(patch, { country: brand.country, cities: ["Stockholm"] });
+      if (!d.budgetMode) Object.assign(patch, { tier: "custom", daily: 100 });
+      if (d.creative && d.creative.status === "fail") patch.creative = demo.creative;
+      set(patch);
+    }
+    go(s);
+  };
+
+  // Every campaign someone starts is saved as a draft and kept in sync as they go
+  useEffect(() => {
+    if (view !== "flow" || ["signup", "success"].includes(step)) return;
+    if (!d.draftId) { set({ draftId: Date.now() }); return; }
+    setCampaigns((xs) => {
+      const existing = xs.find((c) => c.id === d.draftId);
+      if (existing && existing.status !== "Draft") return xs;
+      const rec = summarize(d, "Draft", step);
+      return existing ? xs.map((c) => (c.id === d.draftId ? rec : c)) : [rec, ...xs];
+    });
+  }, [d, step, view]);
+
+  const launch = () => {
+    const rec = summarize(d, d.creative.status === "later" ? "Needs video" : "In review", null);
+    setCampaigns((xs) => xs.some((c) => c.id === rec.id) ? xs.map((c) => (c.id === rec.id ? rec : c)) : [rec, ...xs]);
+    track("campaign_launched", { variant, daily: d.daily, days: durDays(d), total: rec.total, goal: d.goal });
+    next();
+  };
+
+  const nav = (v) => { setView(v); setSelected(null); window.scrollTo(0, 0); track("nav", { to: v }); };
+
+  // Drafts reopen the wizard where they stopped; booked campaigns open their results
+  const openCampaign = (c) => {
+    if (c.status === "Draft" && c.data) {
+      setD(c.data); setReturnTo(null); setView("flow");
+      const i = flow.indexOf(c.step);
+      setStepIdx(i > 0 ? i : flow.indexOf("business"));
+      track("draft_resumed", { step: c.step });
+    } else {
+      setSelected(c.id); setView("campaign"); window.scrollTo(0, 0);
+      track("campaign_results_opened");
+    }
+  };
+
+  // Copies keep brand, audience, budget and video, but need new dates
+  const duplicate = (c) => {
+    const data = { ...c.data, draftId: Date.now(), startDate: null, endDate: null };
+    setCampaigns((xs) => [{ ...summarize(data, "Draft", "schedule"), name: c.name + " (copy)" }, ...xs]);
+    track("campaign_duplicated");
+  };
+
+  // Returning customers keep their account, brand and card, and start at the brand step
+  const startNew = () => {
+    setD((x) => ({ ...INITIAL, email: x.email, website: x.website, password: x.password, brand: x.brand,
+      country: x.brand ? x.brand.country : INITIAL.country, cardAdded: x.cardAdded }));
+    setView("flow"); setReturnTo(null);
+    go(d.brand ? "business" : 0);
+    track("start_campaign_clicked");
+  };
+
+  const restart = (v = variant) => { setVariant(v); setD(INITIAL); setStepIdx(0); setView("flow"); setReturnTo(null); track("prototype_reset", { variant: v }); };
+
+  const labelled = flow.filter((s) => STEP_META[s].label);
+  const curLabelIdx = labelled.indexOf(step);
+  const showChrome = !["signup", "success"].includes(step);
+
+  const valid = {
+    signup: /\S+@\S+\.\S+/.test(d.email) && d.website.length > 3 && d.password.length >= 6,
+    payment: d.cardAdded,
+    welcome: true,
+    business: !!d.brand,
+    goal: !!d.goal,
+    audience: true,
+    budget: !!d.budgetMode && d.daily >= MIN_DAILY,
+    creative: !!d.creative && d.creative.status !== "fail",
+    schedule: !!d.startDate,
+    review: true,
+  }[step];
+
+  const panelEl = html`<${ProtoPanel} open=${panel} setOpen=${setPanel} variant=${variant} setVariant=${restart} billing=${billing} setBilling=${setBilling} events=${events} restart=${restart} flow=${flow} go=${jump}
+    onDashboard=${() => nav("campaigns")} clearCampaigns=${() => { setCampaigns(SEED.campaigns); setMedia(SEED.media); }} />`;
+
+  if (view !== "flow") return html`
+    <${AppShell} view=${view} nav=${nav} onStart=${startNew}>
+      ${view === "home" && html`<${Home} d=${d} campaigns=${campaigns} onStart=${startNew} openCampaign=${openCampaign} nav=${nav} />`}
+      ${view === "campaigns" && html`<${Campaigns} campaigns=${campaigns} onStart=${startNew} openCampaign=${openCampaign} duplicate=${duplicate}
+        removeCampaign=${removeCampaign} stopCampaign=${stopCampaign} flash=${flash} setFlash=${setFlash} />`}
+      ${view === "campaign" && html`<${CampaignDetail} key=${selected} c=${campaigns.find((c) => c.id === selected)} back=${() => nav("campaigns")}
+        stop=${stopCampaign} media=${media} nav=${nav} />`}
+      ${view === "library" && html`<${Library} media=${media} campaigns=${campaigns} addMedia=${addMedia} removeMedia=${removeMedia} openCampaign=${openCampaign} />`}
+      ${view === "reporting" && html`<${Reporting} campaigns=${campaigns} openCampaign=${openCampaign} />`}
+      ${view === "admin" && html`<${Admin} users=${users} setUsers=${setUsers} />`}
+      ${PLACEHOLDERS[view] && html`<${Placeholder} page=${PLACEHOLDERS[view]} nav=${nav} />`}
+    <//>
+    ${panelEl}`;
+
+  const Screen = SCREENS[step];
+  const reviewIsFinal = variant === "A" && step === "review";
+  const paymentIsFinal = variant === "B" && step === "payment";
+
+  return html`
+    ${showChrome && html`
+      <header class="topbar">
+        <${Logo} onClick=${() => nav("home")} />
+        <nav class="stepper">
+          ${labelled.map((s, i) => html`
+            <div key=${s} class=${"s " + (i < curLabelIdx ? "done" : i === curLabelIdx ? "cur" : "")}>
+              <span class="n">${i < curLabelIdx ? "✓" : i + 1}</span>${STEP_META[s].label}
+            </div>`)}
+        </nav>
+        <button class="link-btn" onClick=${() => { track("save_and_exit", { step }); setFlash("Draft saved. Pick it up any time by clicking it below. (Real product: we'd also email a 'pick up where you left off' link.)"); nav("campaigns"); }}>Save & exit</button>
+      </header>`}
+
+    <main class="fade" key=${step}>
+      <${Screen} d=${d} set=${set} next=${next} variant=${variant} go=${go} editFromReview=${editFromReview} media=${media} addMedia=${addMedia} billing=${billing} setBilling=${setBilling}
+        onDashboard=${() => { setFlash(`🎉 ${d.brand.name}'s campaign is booked. We'll email you as soon as your video is approved.`); nav("campaigns"); }} />
+    </main>
+
+    ${showChrome && step !== "welcome" && html`
+      <div class="footer-nav">
+        <button class="btn" onClick=${back} disabled=${stepIdx === 0}>← Back</button>
+        <div class="row">
+          ${returnTo && html`<span class="small muted">Returning to review after this step</span>`}
+          ${reviewIsFinal || paymentIsFinal
+            ? html`<button class="btn primary lg" disabled=${!valid} onClick=${launch}>
+                🚀 Launch campaign</button>`
+            : html`<button class="btn primary lg" disabled=${!valid} onClick=${next}>${step === "review" ? "Continue to payment →" : "Continue →"}</button>`}
+        </div>
+      </div>`}
+
+    ${panelEl}
+  `;
+}
+
+const LOGO_SRC = "data:image/png;base64,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";
+function Logo({ onClick }) {
+  return html`<div class="logo" style=${onClick ? { cursor: "pointer" } : null} title=${onClick ? "Home" : null} onClick=${onClick}>
+    <span class="logo-icon"><img src=${LOGO_SRC} alt="" /></span>airspot</div>`;
+}
+
+function summarize(d, status, step) {
+  const g = GOALS.find((x) => x.id === d.goal);
+  const f = d.budgetMode ? forecast(d) : null;
+  return {
+    id: d.draftId, status, step, updated: Date.now(),
+    name: d.brand ? `${d.brand.name}: ${g ? g.t : "New campaign"}` : "New campaign",
+    advertiser: d.brand ? d.brand.name : "—", goal: g ? g.t : null,
+    daily: f ? d.daily : null, total: f ? f.total : null,
+    startDate: d.startDate, endDate: d.startDate ? endDateOf(d) : null,
+    households: f ? f.households : null, creative: d.creative ? d.creative.name : null,
+    data: d,
+  };
+}
+
+// Loops the brand-kit ad on a canvas: the preview when there's no playable file
+function AdPreview({ brand }) {
+  const ref = useRef();
+  useEffect(() => {
+    const canvas = ref.current;
+    canvas.width = 960; canvas.height = 540;
+    const ctx = canvas.getContext("2d");
+    let logo = null, raf;
+    if (brand.logoUrl) { const i = new Image(); i.onload = () => (logo = i); i.src = brand.logoUrl; }
+    const t0 = performance.now();
+    const loop = () => {
+      ctx.save(); ctx.scale(0.5, 0.5);
+      drawAdFrame(ctx, 1920, 1080, ((performance.now() - t0) / 1000) % EXAMPLE_SECONDS, brand, logo);
+      ctx.restore();
+      raf = requestAnimationFrame(loop);
+    };
+    loop();
+    return () => cancelAnimationFrame(raf);
+  }, [brand]);
+  return html`<canvas ref=${ref} style=${{ width: "100%", height: "100%", display: "block" }}></canvas>`;
+}
+
+/* ---------- Screens ---------- */
+function Signup({ d, set, next }) {
+  const ok = /\S+@\S+\.\S+/.test(d.email) && d.website.length > 3 && d.password.length >= 6;
+  return html`
+    <div class="auth">
+      <div class="row" style=${{ justifyContent: "center", marginBottom: 28 }}><${Logo} /></div>
+      <div class="card">
+        <h1 style=${{ fontSize: 26, textAlign: "center" }}>Get your brand on TV</h1>
+        <p class="lead" style=${{ textAlign: "center", marginBottom: 22 }}>Your first campaign can be live in about 5 minutes, starting from ${fmtUSD(MIN_DAILY)}/day.</p>
+        <button class="btn block" onClick=${() => track("signup_google_clicked")}>Continue with Google</button>
+        <div class="divider">or</div>
+        <div class="stack">
+          <div class="field"><label>Work email</label>
+            <input class="input" type="email" placeholder="you@company.com" value=${d.email} onInput=${(e) => set({ email: e.target.value })} /></div>
+          <div class="field"><label>Company website</label>
+            <input class="input" placeholder="yourbrand.com" value=${d.website} onInput=${(e) => set({ website: e.target.value })} />
+            <div class="hint">We'll use it to set up your brand and suggest audiences, so you don't have to.</div></div>
+          <div class="field"><label>Password</label>
+            <input class="input" type="password" placeholder="At least 6 characters" value=${d.password} onInput=${(e) => set({ password: e.target.value })} /></div>
+          <button class="btn primary block lg" disabled=${!ok} onClick=${() => { track("account_created", { website: d.website }); next(); }}>Create account</button>
+          <button class="link-btn" style=${{ width: "100%" }} onClick=${() => set({ email: "demo@ikea.se", website: DEMO_SITE, password: "demo1234" })}>Fill demo details</button>
+        </div>
+      </div>
+      <p class="small muted" style=${{ textAlign: "center" }}>No card needed to look around.</p>
+    </div>`;
+}
+
+function BillingToggle({ billing, setBilling }) {
+  const pick = (b) => { setBilling(b); track("billing_model_switched", { billing: b }); };
+  return html`
+    <div class="sim" style=${{ marginTop: 0, marginBottom: 20 }}>
+      <span>🧪 Prototype A/B · billing model</span>
+      <div class="seg dark">
+        <button class=${billing === "advance" ? "on" : ""} onClick=${() => pick("advance")}>Pay in advance</button>
+        <button class=${billing === "progressive" ? "on" : ""} onClick=${() => pick("progressive")}>Bill during campaign</button>
+      </div>
+    </div>`;
+}
+
+function Payment({ d, set, variant, billing, setBilling }) {
+  const f = forecast(d);
+  const upfront = variant === "A";
+  const advance = billing === "advance";
+  const fill = () => set({ cardAdded: true });
+  const launchDay = d.startDate ? niceDate(d.startDate) : "launch day";
+  return html`
+    <div class="narrow">
+      <${BillingToggle} billing=${billing} setBilling=${setBilling} />
+      <div class="eyebrow">${upfront ? "Before we start" : "Last step"}</div>
+      <h1>${upfront ? "Add a payment method" : "Payment & launch"}</h1>
+      ${upfront && html`<p class="lead">You won't be charged anything until you launch a campaign. Adding it now means you can go live as soon as you're ready.</p>`}
+      ${!upfront && html`<div class="notice info" style=${{ margin: "8px 0 20px" }}>💳 On launch day (${launchDay}), the full amount of <b>${fmtUSD(f.total)}</b> will be ${advance ? "charged to" : "reserved on"} your card.</div>`}
+      <div class=${upfront ? "" : "grid2"} style=${upfront ? {} : { gridTemplateColumns: "1fr 300px" }}>
+        <div class="card stack">
+          <div class="field"><label>Name on card</label><input class="input" placeholder="Alex Andersson" disabled=${d.cardAdded} /></div>
+          <div class="field"><label>Card details</label><input class="input" placeholder="Card number · MM/YY · CVC" disabled=${d.cardAdded} /></div>
+          ${d.cardAdded
+            ? html`<div class="notice ok">✓ Test card added (prototype: nothing is charged).</div>`
+            : html`<button class="btn" onClick=${() => { fill(); track("payment_entered", { variant }); }}>Use prototype test card</button>`}
+          <div class="small muted" style=${{ lineHeight: 1.5 }}>
+            ${!upfront && html`<div style=${{ marginBottom: 6 }}>${advance
+              ? `You'll pay the full ${fmtUSD(f.total)} on launch day. If your ads deliver less than planned, the unused budget is credited back.`
+              : `On launch day, the full ${fmtUSD(f.total)} is reserved on your card. We then draw it progressively as your ads run, billed weekly, and release anything unused.`}</div>`}
+            🔒 Payments handled by Stripe. Cancel any time before your launch date at no cost.
+          </div>
+        </div>
+        ${!upfront && html`
+          <div class="card">
+            <h3>Order summary</h3>
+            <div class="summary-row" style=${{ gridTemplateColumns: "1fr auto" }}><span class="k">Daily budget</span><b>${fmtUSD(d.daily)}</b></div>
+            <div class="summary-row" style=${{ gridTemplateColumns: "1fr auto" }}><span class="k">Duration</span><b>${fmtDuration(durDays(d))}</b></div>
+            <div class="summary-row" style=${{ gridTemplateColumns: "1fr auto" }}><span class="k">Maximum total</span><b>${fmtUSD(f.total)}</b></div>
+            <div class="summary-row" style=${{ gridTemplateColumns: "1fr auto" }}><span class="k">Due today</span><b>$0</b></div>
+            ${advance
+              ? html`<div class="summary-row" style=${{ gridTemplateColumns: "1fr auto" }}><span class="k">Charged on launch day</span><b>${fmtUSD(f.total)}</b></div>`
+              : html`
+                <div class="summary-row" style=${{ gridTemplateColumns: "1fr auto" }}><span class="k">Reserved on launch day</span><b>${fmtUSD(f.total)}</b></div>
+                <div class="summary-row" style=${{ gridTemplateColumns: "1fr auto" }}><span class="k">Drawn each week</span><b>~${fmtUSD(d.daily * 7)}</b></div>`}
+          </div>`}
+      </div>
+    </div>`;
+}
+
+function Welcome({ next }) {
+  const [p, setP] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const fired = useRef(new Set());
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => setP((x) => Math.min(100, x + 2)), 120); // ~6s demo of a 75s video
+    return () => clearInterval(id);
+  }, [playing]);
+  useEffect(() => {
+    [25, 50, 75, 100].forEach((q) => { if (p >= q && !fired.current.has(q)) { fired.current.add(q); track("intro_video_progress", { percent: q }); } });
+    if (p >= 100) setPlaying(false);
+  }, [p]);
+  return html`
+    <div class="narrow">
+      <div class="eyebrow">Welcome to Airspot</div>
+      <h1>TV advertising, made simple</h1>
+      <p class="lead">A 75-second intro to what you're buying and how the next few minutes work.</p>
+      <div class="video">
+        ${!playing && p < 100 && html`<button class="play" onClick=${() => { setPlaying(true); track("intro_video_started"); }}>▶</button>`}
+        ${playing && html`<div style=${{ fontSize: 18, textAlign: "center", padding: 24 }}>
+          ${p < 33 ? "Connected TV = streaming apps on smart TVs (think Netflix-style ad breaks)." : p < 66 ? "You pick who sees it. We handle where it runs and how much to bid." : "Set a budget, add a video, go live. Track results in Reporting."}</div>`}
+        ${p >= 100 && html`<div style=${{ textAlign: "center" }}><div style=${{ fontSize: 40 }}>✓</div>That's it! Let's set up your first campaign.</div>`}
+        <div class="vcap">${playing ? "Playing…" : p >= 100 ? "Watched" : "1:15"}</div>
+        <div class="vbar" style=${{ width: p + "%" }}></div>
+      </div>
+      <div class="card" style=${{ marginTop: 24 }}>
+        <h3>In the next ~5 minutes you'll</h3>
+        <ol class="muted" style=${{ margin: 0, paddingLeft: 20, lineHeight: 1.9 }}>
+          <li>Set up your brand (we've already filled it in)</li>
+          <li>Pick a goal and who should see your ad</li>
+          <li>Set a budget, starting from ${fmtUSD(MIN_DAILY)}/day</li>
+          <li>Add your 15 or 30 second video</li>
+          <li>Review everything and launch</li>
+        </ol>
+      </div>
+      <div class="row between" style=${{ marginTop: 24 }}>
+        <button class="link-btn" onClick=${() => { track("intro_video_skipped", { percent: p }); next(); }}>Skip intro</button>
+        <button class="btn primary lg" onClick=${next}>Let's set up my campaign →</button>
+      </div>
+    </div>`;
+}
+
+function Business({ d, set }) {
+  const [loading, setLoading] = useState(!d.brand);
+  const logoRef = useRef();
+  useEffect(() => {
+    if (d.brand) return;
+    const t = setTimeout(() => {
+      const b = brandFromUrl(d.website);
+      set({ brand: b, country: b.country });
+      setLoading(false);
+      track("brand_kit_prefilled", { host: b.host, category: b.category });
+    }, 1400);
+    return () => clearTimeout(t);
+  }, []);
+  if (loading) return html`
+    <div class="narrow" style=${{ textAlign: "center", paddingTop: 60 }}>
+      <div class="spinner"></div>
+      <h2 style=${{ marginTop: 20 }}>Reading ${d.website || "your website"}…</h2>
+      <p class="muted">Pulling your logo, colours and what you do.</p>
+    </div>`;
+  const b = d.brand;
+  const upd = (p) => set({ brand: { ...b, ...p } });
+  const setColor = (i, v) => { const colors = [...b.colors]; colors[i] = v; upd({ colors }); };
+  const onLogo = (file) => { if (!file) return; upd({ logoUrl: URL.createObjectURL(file) }); track("logo_uploaded"); };
+  return html`
+    <div class="narrow">
+      <div class="eyebrow">Step 1 · Your brand</div>
+      <h1>Set up your brand</h1>
+      <p class="lead">We set this up from <b>${b.host}</b>. Fix anything that's off. It's used to suggest audiences and preview your ad.</p>
+      <div class="card stack">
+        <div class="row" style=${{ gap: 24, alignItems: "flex-start" }}>
+          <div>
+            <div class="small muted" style=${{ marginBottom: 6 }}>Logo</div>
+            <button class="logo-tile" style=${{ background: b.colors[0] }} title="Upload logo" onClick=${() => logoRef.current.click()}>
+              ${b.logoUrl ? html`<img src=${b.logoUrl} alt="" />` : b.name.slice(0, 1)}
+              <span class="ov">${b.logoUrl ? "Change" : "Upload"}</span>
+            </button>
+            <input ref=${logoRef} type="file" accept="image/*" style=${{ display: "none" }} onChange=${(e) => onLogo(e.target.files[0])} />
+          </div>
+          <div>
+            <div class="small muted" style=${{ marginBottom: 6 }}>Brand colours · click to change</div>
+            <div class="row" style=${{ gap: 8 }}>
+              ${b.colors.map((c, i) => html`
+                <label key=${i} class="swatch" style=${{ background: c }} title=${c}>
+                  <input type="color" value=${c} onInput=${(e) => setColor(i, e.target.value)} onChange=${() => track("brand_colour_changed", { index: i })} />
+                </label>`)}
+            </div>
+            <div class="small muted" style=${{ marginTop: 8 }}>Used in your ad preview and example video.</div>
+          </div>
+        </div>
+        <div class="field"><label>Business name</label><input class="input" value=${b.name} onInput=${(e) => upd({ name: e.target.value })} /></div>
+        <div class="field"><label>Category</label>
+          <select class="input" value=${b.category} onChange=${(e) => upd({ category: e.target.value })}>
+            ${Object.keys(CATEGORIES).map((c) => html`<option key=${c}>${c}</option>`)}
+          </select></div>
+        <div class="field"><label>What you do</label><textarea class="input" rows="3" value=${b.description} onInput=${(e) => upd({ description: e.target.value })}></textarea></div>
+      </div>
+    </div>`;
+}
+
+function Goal({ d, set }) {
+  return html`
+    <div>
+      <div class="eyebrow">Step 2 · Goal</div>
+      <h1>What do you want this campaign to do?</h1>
+      <p class="lead">This decides what we show you in your report, so you know what success looks like before you spend a cent.</p>
+      <div class="options">
+        ${GOALS.map((g) => html`
+          <button key=${g.id} class=${"option " + (d.goal === g.id ? "on" : "")} onClick=${() => { set({ goal: g.id }); track("goal_selected", { goal: g.id }); }}>
+            <div class="ico">${g.ico}</div><div class="t">${g.t}</div><div class="d">${g.d}</div><div class="see">${g.see}</div>
+          </button>`)}
+      </div>
+      <div class="notice info" style=${{ marginTop: 20 }}>💡 TV is best at getting you noticed. It doesn't track every sale the way search ads do, so we'll show you reach, views and site visits instead.</div>
+    </div>`;
+}
+
+function ReachPanel({ d, showBudget }) {
+  const f = forecast(d);
+  const sizeLabel = f.audience < 20000 ? ["Too narrow", "var(--err)", 15] : f.audience < 150000 ? ["Focused", "var(--warn)", 45] : f.audience < 2e6 ? ["Balanced", "var(--ok)", 72] : ["Broad", "var(--primary)", 95];
+  return html`
+    <div class="card sticky">
+      <div class="eyebrow">Your estimated reach</div>
+      <div class="stat">
+        <div class="k">Audience size</div>
+        <div class="v">${fmtNum(f.audience)} <span class="small muted" style=${{ fontWeight: 500 }}>households</span></div>
+        <div class="meter"><div style=${{ width: sizeLabel[2] + "%", background: sizeLabel[1] }}></div></div>
+        <div class="small" style=${{ color: sizeLabel[1], marginTop: 6, fontWeight: 600 }}>${sizeLabel[0]}</div>
+      </div>
+      ${showBudget && html`
+        <div class="stat"><div class="k">Households you'll reach</div><div class="v">${fmtNum(f.households)}</div>
+          <div class="small muted">${(f.households / f.audience * 100).toFixed(0)}% of your audience, ~${f.frequency.toFixed(1)}× each</div></div>
+        <div class="stat"><div class="k">Ad plays on TV</div><div class="v">${fmtNum(f.impressions)}</div>
+          <div class="small muted">${fmtNum(f.dailyNeed)}/day at ~${fmtUSD(CPM)} per 1,000</div></div>
+        <div class="stat"><div class="k">Total spend</div><div class="v">${fmtUSD(f.total)}</div>
+          <div class="small muted">${fmtUSD(d.daily)}/day × ${f.days} days</div></div>
+        ${!f.deliverable && html`<div class="notice warn" style=${{ marginTop: 12 }}>Your audience can take about ${fmtNum(f.dailyCapacity)} plays a day, but this budget buys ${fmtNum(f.dailyNeed)}. Broaden your audience or lower the daily budget so none of it goes unspent.</div>`}`}
+      ${!showBudget && f.audience < 20000 && html`<div class="notice err" style=${{ marginTop: 12 }}>This audience is too small to run well on TV. Try removing a filter.</div>`}
+      <div class="small muted" style=${{ marginTop: 12 }}>Estimates based on ${COUNTRIES[d.country].name} CTV households. Prototype figures.</div>
+    </div>`;
+}
+
+function Audience({ d, set }) {
+  const c = COUNTRIES[d.country];
+  const toggle = (key, v) => { const arr = d[key].includes(v) ? d[key].filter((x) => x !== v) : [...d[key], v]; set({ [key]: arr }); track("audience_changed", { key, value: v }); };
+  const suggested = CATEGORIES[d.brand?.category] || [];
+  const allInterests = [...new Set([...suggested, ...Object.values(CATEGORIES).flat()])].slice(0, 16);
+  return html`
+    <div>
+      <div class="eyebrow">Step 3 · Audience</div>
+      <h1>Who should see your ad?</h1>
+      <p class="lead">Start broad. You can narrow it down, but TV works best with a healthy-sized audience.</p>
+      <div class="grid2">
+        <div class="stack">
+          <div class="card">
+            <h2>📍 Where</h2>
+            <p class="small muted" style=${{ marginTop: 0 }}>Where your customers live.</p>
+            <div class="field" style=${{ marginBottom: 12 }}>
+              <label>Country</label>
+              <select class="input" value=${d.country} onChange=${(e) => set({ country: e.target.value, region: null, cities: [] })}>
+                ${Object.entries(COUNTRIES).map(([k, v]) => html`<option key=${k} value=${k}>${v.name}</option>`)}
+              </select></div>
+            <div class="field" style=${{ marginBottom: 12 }}>
+              <label>Region</label>
+              <select class="input" value=${d.region || ""} onChange=${(e) => { set({ region: e.target.value || null, cities: [] }); track("audience_changed", { key: "region", value: e.target.value || "all" }); }}>
+                <option value="">All regions</option>
+                ${Object.keys(c.regions).map((r) => html`<option key=${r} value=${r}>${r}</option>`)}
+              </select></div>
+            <div class="chips">
+              <button class=${"chip " + (!d.cities.length ? "on" : "")} onClick=${() => set({ cities: [] })}>${d.region ? `All of ${d.region}` : "Whole country"}</button>
+              ${(d.region ? c.regions[d.region].cities : Object.keys(c.cities)).map((k) => html`<button key=${k} class=${"chip " + (d.cities.includes(k) ? "on" : "")} onClick=${() => toggle("cities", k)}>${k}</button>`)}
+            </div>
+          </div>
+          <div class="card">
+            <h2>🏠 Household</h2>
+            <p class="small muted" style=${{ marginTop: 0 }}>TV is watched by households, so we target homes, not individuals.</p>
+            <h3 style=${{ marginTop: 14 }}>Gender</h3>
+            <div class="chips">${Object.keys(GENDER).map((k) => html`<button key=${k} class=${"chip " + ((d.gender || "All") === k ? "on" : "")} onClick=${() => { set({ gender: k }); track("audience_changed", { key: "gender", value: k }); }}>${k}</button>`)}</div>
+            <h3 style=${{ marginTop: 16 }}>Age of household</h3>
+            <div class="chips">
+              <button class=${"chip " + (!d.ages.length ? "on" : "")} onClick=${() => set({ ages: [] })}>All ages</button>
+              ${Object.keys(AGES).map((k) => html`<button key=${k} class=${"chip " + (d.ages.includes(k) ? "on" : "")} onClick=${() => toggle("ages", k)}>${k}</button>`)}
+            </div>
+            <h3 style=${{ marginTop: 16 }}>Household income</h3>
+            <div class="chips">${Object.keys(INCOME).map((k) => html`<button key=${k} class=${"chip " + (d.income === k ? "on" : "")} onClick=${() => set({ income: k })}>${k}</button>`)}</div>
+            <h3 style=${{ marginTop: 16 }}>Children</h3>
+            <div class="chips">${Object.keys(KIDS).map((k) => html`<button key=${k} class=${"chip " + (d.kids === k ? "on" : "")} onClick=${() => set({ kids: k })}>${k}</button>`)}</div>
+          </div>
+          <div class="card">
+            <div class="row between"><h2>✨ Interests <span class="tag grey">Optional</span></h2></div>
+            <p class="small muted" style=${{ marginTop: 0 }}>Suggested from your website (${d.brand?.category}). Each one you add narrows your audience.</p>
+            <div class="chips">
+              ${allInterests.map((k) => html`<button key=${k} class=${"chip " + (suggested.includes(k) ? "sugg " : "") + (d.interests.includes(k) ? "on" : "")} onClick=${() => toggle("interests", k)}>${k}</button>`)}
+            </div>
+          </div>
+        </div>
+        <${ReachPanel} d=${d} showBudget=${false} />
+      </div>
+    </div>`;
+}
+
+// Drag to change the campaign total; the bar shows how much of the audience that budget can reach
+function BudgetSlider({ d, value, min, max, step, onChange, marks = [], label }) {
+  const f = forecast(d);
+  const pct = f.audience ? Math.min(100, (f.households / f.audience) * 100) : 0;
+  const pos = (v) => ((Math.min(max, Math.max(min, v)) - min) / (max - min)) * 100;
+  return html`
+    <div class="budget-slider">
+      <div class="row between">
+        <span class="small muted">${label}</span>
+        <b style=${{ fontSize: 20 }}>${fmtUSD(value)}</b>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" min=${min} max=${max} step=${step} value=${Math.min(max, Math.max(min, value))}
+          onInput=${(e) => onChange(Number(e.target.value))} onPointerUp=${() => track("budget_slider_used", { total: value })} />
+        ${marks.map((m) => html`<span key=${m.label} class=${"mark" + (m.active ? " on" : "")} style=${{ left: pos(m.value) + "%" }}>${m.label}</span>`)}
+      </div>
+      <div class="coverage">
+        <div class="row between small">
+          <span>Reaches <b>${fmtNum(f.households)}</b> of ${fmtNum(f.audience)} households in your audience</span>
+          <b>${pct.toFixed(0)}%</b>
+        </div>
+        <div class="meter"><div style=${{ width: pct + "%", background: pct >= 60 ? "var(--ok)" : pct >= 20 ? "var(--primary)" : "var(--warn)" }}></div></div>
+        <div class="small muted" style=${{ marginTop: 6 }}>${fmtUSD(d.daily)}/day · ~${f.frequency.toFixed(1)}× each${!f.deliverable ? " · more than this audience can absorb" : ""}</div>
+      </div>
+    </div>`;
+}
+
+function Budget({ d, set }) {
+  const f = forecast(d);
+  const tiers = useMemo(() => {
+    const a = audienceSize(d), days = durDays(d);
+    const dailyFor = (share) => Math.min(500, Math.max(MIN_DAILY, Math.round((a * share * TARGET_FREQ / 1000 * CPM) / days / 5) * 5));
+    // First campaigns are tests: keep tiers within an SME test budget
+    const rec = Math.min(150, Math.max(MIN_DAILY + 25, dailyFor(0.1)));
+    const max = Math.min(500, Math.max(rec + 75, dailyFor(0.3)));
+    const hh = (daily) => fmtNum(Math.min(a * 0.85, (daily * days / CPM) * 1000 / TARGET_FREQ));
+    return [
+      { id: "starter", t: "Starter", daily: MIN_DAILY, d: `The minimum. Reaches ~${hh(MIN_DAILY)} households. Enough to learn whether TV works for you.` },
+      { id: "rec", t: "Recommended", daily: rec, d: `Reaches ~${hh(rec)} households about 3 times each. The sweet spot for a first campaign.` },
+      { id: "max", t: "Max reach", daily: max, d: `Reaches ~${hh(max)} households. Best for launches and time-limited offers.` },
+    ];
+  }, [d.country, d.region, d.cities, d.ages, d.gender, d.income, d.kids, d.interests, d.weeks, d.startDate, d.endDate]);
+
+  const days = durDays(d);
+  const testDaily = d.testBudget / days;
+  const applyTest = (total, weeks = d.weeks) => set({ testBudget: total, weeks, endDate: null, daily: Math.max(MIN_DAILY, Math.floor(total / (weeks * 7))) });
+  const maxWeeksForTest = Math.floor(d.testBudget / (MIN_DAILY * 7));
+
+  return html`
+    <div>
+      <div class="eyebrow">Step 4 · Budget</div>
+      <h1>How much would you like to spend?</h1>
+      <p class="lead">Campaigns run best for about 4 weeks. The minimum is ${fmtUSD(MIN_DAILY)} a day, and you can pause any time.</p>
+      <div class="grid2">
+        <div class="stack">
+          <div class="options">
+            <button class=${"option " + (d.budgetMode === "have" ? "on" : "")} onClick=${() => { set({ budgetMode: "have" }); applyTest(d.testBudget); track("budget_mode", { mode: "have" }); }}>
+              <div class="ico">💰</div><div class="t">I have a budget in mind</div><div class="d">Tell us your test budget and we'll show what it buys.</div></button>
+            <button class=${"option " + (d.budgetMode === "help" ? "on" : "")} onClick=${() => { set({ budgetMode: "help", tier: "rec", daily: tiers[1].daily }); track("budget_mode", { mode: "help" }); }}>
+              <div class="ico">🧭</div><div class="t">Help me decide</div><div class="d">We'll recommend a budget based on your audience.</div></button>
+          </div>
+
+          <div class="card">
+            <h3>How long should it run?</h3>
+            <div class="chips">
+              ${[2, 4, 6, 8].map((w) => html`<button key=${w} class=${"chip " + (d.weeks === w && !d.endDate ? "on" : "")} onClick=${() => d.budgetMode === "have" ? applyTest(d.testBudget, w) : set({ weeks: w, endDate: null })}>${w} weeks${w === 4 ? " · recommended" : ""}</button>`)}
+            </div>
+            ${d.endDate && html`<div class="small muted" style=${{ marginTop: 10 }}>Using your custom end date (${fmtDuration(days)}). Pick a length to replace it.</div>`}
+          </div>
+
+          ${d.budgetMode === "have" && html`
+            <div class="card stack">
+              <div class="field"><label>Total test budget (USD)</label>
+                <input class="input" type="number" min="0" step="50" value=${d.testBudget} onInput=${(e) => applyTest(Number(e.target.value) || 0)} /></div>
+              <${BudgetSlider} d=${d} label="Or drag to set your budget" value=${d.testBudget} min=${250} max=${15000} step=${50}
+                onChange=${(v) => applyTest(v)}
+                marks=${[{ label: `Minimum ${fmtUSD(MIN_DAILY * days)}`, value: MIN_DAILY * days, active: d.testBudget >= MIN_DAILY * days }]} />
+              ${testDaily < MIN_DAILY
+                ? html`<div class="notice warn">
+                    <b>${fmtUSD(d.testBudget)} over ${d.weeks} weeks is ${fmtUSD(testDaily)}/day</b>, under our ${fmtUSD(MIN_DAILY)}/day minimum. Below that, TV can't reach enough homes often enough to make an impression.
+                    <div class="row" style=${{ marginTop: 10 }}>
+                      ${maxWeeksForTest >= 1 && html`<button class="btn" onClick=${() => applyTest(d.testBudget, Math.min(8, maxWeeksForTest))}>Run ${maxWeeksForTest} week${maxWeeksForTest > 1 ? "s" : ""} instead</button>`}
+                      <button class="btn" onClick=${() => applyTest(MIN_DAILY * days)}>Raise to ${fmtUSD(MIN_DAILY * days)}</button>
+                    </div></div>`
+                : html`<div class="notice ok">That's <b>${fmtUSD(d.daily)}/day</b> for ${days} days. 👍</div>`}
+            </div>`}
+
+          ${d.budgetMode === "help" && html`
+            <div class="stack">
+              ${tiers.map((t) => html`
+                <button key=${t.id} class=${"option " + (d.tier === t.id ? "on" : "")} style=${{ width: "100%" }} onClick=${() => { set({ tier: t.id, daily: t.daily }); track("budget_tier", { tier: t.id, daily: t.daily }); }}>
+                  <div class="row between"><div class="t">${t.t} ${t.id === "rec" && html`<span class="tag">Most popular</span>`}</div>
+                    <div class="t">${fmtUSD(t.daily)}/day · ${fmtUSD(t.daily * days)}</div></div>
+                  <div class="d">${t.d}</div>
+                </button>`)}
+              <div class="card">
+                <${BudgetSlider} d=${d} label=${d.tier === "custom" ? "Custom budget" : "Fine-tune your total budget"}
+                  value=${d.daily * days} min=${MIN_DAILY * days} max=${Math.max(300, Math.round(tiers[2].daily * 1.5 / 50) * 50) * days} step=${5 * days}
+                  onChange=${(v) => { const daily = Math.round(v / days); set({ daily, tier: (tiers.find((t) => t.daily === daily) || { id: "custom" }).id }); }}
+                  marks=${tiers.map((t) => ({ label: t.t, value: t.daily * days, active: d.tier === t.id }))} />
+              </div>
+            </div>`}
+        </div>
+        <${ReachPanel} d=${d} showBudget=${!!d.budgetMode} />
+      </div>
+    </div>`;
+}
+
+function specIssues(meta) {
+  const issues = [];
+  if (!meta.duration) issues.push("We couldn't read this file. Try exporting it again as MP4.");
+  else if (![15, 30].some((s) => Math.abs(meta.duration - s) <= 0.6)) issues.push(`Length is ${meta.duration.toFixed(0)}s. TV ad slots are exactly 15 or 30 seconds.`);
+  if (meta.height && meta.height < 1080) issues.push(`Resolution is ${meta.width}×${meta.height}. TV needs at least 1920×1080 (Full HD).`);
+  return issues;
+}
+
+function Creative({ d, set, media, addMedia }) {
+  const inputRef = useRef();
+  const canvasRef = useRef();
+  const [gen, setGen] = useState(null); // null | { progress } | { checking: true }
+  const validate = (meta, source) => {
+    const issues = specIssues(meta);
+    const creative = { ...meta, status: issues.length ? "fail" : "ok", issues };
+    if (!issues.length) creative.mediaId = addMedia({ name: meta.name, duration: meta.duration, width: meta.width, height: meta.height, url: meta.url, source });
+    set({ creative });
+    track("creative_uploaded", { duration: Math.round(meta.duration), height: meta.height, passed: !issues.length });
+  };
+  const onFile = async (file) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const meta = await probeVideo(url);
+    validate({ name: file.name, ...meta, url: meta.duration ? url : null }, "upload");
+  };
+  // Renders a real 15s Full HD video from the brand kit, then runs it through the same checks as an upload
+  const generate = async () => {
+    track("example_video_started");
+    setGen({ progress: 0 });
+    await new Promise((r) => setTimeout(r, 50)); // let the canvas mount
+    const blob = await renderExampleAd(d.brand, EXAMPLE_SECONDS, canvasRef.current, (p) => setGen({ progress: p }));
+    setGen({ checking: true });
+    const url = URL.createObjectURL(blob);
+    const meta = await probeVideo(url);
+    setGen(null);
+    const slug = d.brand.name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    validate({ name: `${slug}_example_${EXAMPLE_SECONDS}s.webm`, ...meta,
+      duration: Number.isFinite(meta.duration) && meta.duration > 0 ? meta.duration : EXAMPLE_SECONDS, url }, "generated");
+  };
+  const c = d.creative;
+  return html`
+    <div class="narrow">
+      <div class="eyebrow">Step 5 · Your video</div>
+      <h1>Add your TV ad</h1>
+      <p class="lead">We check it against TV requirements straight away, so it won't get rejected later.</p>
+      <div class="card stack">
+        <div class="drop">
+          <div style=${{ fontSize: 30 }}>🎬</div>
+          <div style=${{ fontWeight: 600, margin: "8px 0 4px" }}>Upload a video file</div>
+          <div class="small muted">MP4 or MOV · exactly 15s or 30s · 1920×1080 or higher</div>
+          <input ref=${inputRef} type="file" accept="video/*" style=${{ display: "none" }} onChange=${(e) => onFile(e.target.files[0])} />
+          <div class="row" style=${{ justifyContent: "center", marginTop: 14 }}>
+            <button class="btn primary" onClick=${() => inputRef.current.click()} disabled=${!!gen}>Choose file</button>
+            <button class="btn" onClick=${generate} disabled=${!!gen}>✨ Generate an example from my brand</button>
+          </div>
+          <div class="small muted" style=${{ marginTop: 14 }}>Demo samples:
+            <button class="link-btn" onClick=${() => validate({ name: "spring_promo_30s.mp4", duration: 30, width: 1920, height: 1080, url: null }, "sample")}>✓ 30s Full HD</button>
+            <button class="link-btn" onClick=${() => validate({ name: "teaser_final.mov", duration: 9, width: 1280, height: 720, url: null }, "sample")}>✗ 9s 720p</button>
+          </div>
+          ${media.length > 0 && html`
+            <div class="small muted" style=${{ marginTop: 6 }}>From your library:
+              ${media.slice(0, 4).map((m) => html`<button key=${m.id} class=${"link-btn" + (c?.mediaId === m.id ? " on" : "")}
+                onClick=${() => { set({ creative: { name: m.name, duration: m.duration, width: m.width, height: m.height, url: m.url, status: "ok", issues: [], mediaId: m.id } }); track("media_reused"); }}>🎞️ ${m.name}</button>`)}
+            </div>`}
+        </div>
+
+        ${gen && html`
+          <div class="stack">
+            <canvas ref=${canvasRef} class="render-canvas"></canvas>
+            <div class="small muted">${gen.checking ? "Checking length and resolution…" : `Rendering your example ad… ${Math.round(gen.progress * EXAMPLE_SECONDS)}/${EXAMPLE_SECONDS}s`}</div>
+            <div class="meter"><div style=${{ width: (gen.checking ? 100 : gen.progress * 100) + "%", background: "var(--primary)" }}></div></div>
+          </div>`}
+
+        ${!gen && c?.status === "ok" && (c.url
+          ? html`<video src=${c.url} class="render-canvas" controls muted autoplay loop playsinline></video>`
+          : html`<div class="render-canvas" style=${{ overflow: "hidden" }}><${AdPreview} brand=${d.brand} /></div>`)}
+
+        ${!gen && c && c.status !== "later" && html`
+          <div class=${"notice " + (c.status === "ok" ? "ok" : "err")}>
+            <b>${c.name}</b>
+            <div class="check"><span class="i">${[15, 30].some((s) => Math.abs(c.duration - s) <= 0.6) ? "✓" : "✗"}</span>Length: ${c.duration.toFixed(0)}s</div>
+            <div class="check"><span class="i">${!c.height || c.height >= 1080 ? "✓" : "✗"}</span>Resolution: ${c.width ? `${c.width}×${c.height}` : "n/a"}</div>
+            ${c.issues.map((i) => html`<div class="small" key=${i}>→ ${i}</div>`)}
+            ${c.status === "ok" && html`<div class="small" style=${{ marginTop: 6 }}>Looks great. Our team does a final quality check within ${APPROVAL_DAYS} business days.</div>`}
+          </div>`}
+
+        <div class="divider">no video yet?</div>
+        <div class="options">
+          <button class=${"option " + (c?.status === "later" ? "on" : "")} onClick=${() => { set({ creative: { status: "later", name: "Added later", issues: [] } }); track("creative_skipped"); }}>
+            <div class="t">Add it later</div><div class="d">Finish setting up now. Your campaign waits until a video is approved.</div></button>
+          <button class="option" onClick=${() => { track("creative_help_requested"); alert("In the real product: book a free 15-min creative call, or (v1.3) generate a video from your brand kit."); }}>
+            <div class="t">Get help making one</div><div class="d">Book a free creative call, or have us make one from your brand kit.</div></button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function Schedule({ d, set }) {
+  const earliest = addBusinessDays(new Date(), APPROVAL_DAYS);
+  useEffect(() => { if (!d.startDate) set({ startDate: isoDate(earliest) }); }, []);
+  if (!d.startDate) return null;
+  const plus = (iso, n) => isoDate(addDays(new Date(iso + "T12:00:00"), n));
+  const minEnd = plus(d.startDate, 6); // 7-day minimum run
+  const days = durDays(d);
+  const setStart = (v) => {
+    if (!v) return;
+    const patch = { startDate: v };
+    if (d.endDate && d.endDate < plus(v, 6)) patch.endDate = plus(v, d.weeks * 7 - 1);
+    set(patch); track("start_date_changed");
+  };
+  return html`
+    <div class="narrow">
+      <div class="eyebrow">Step 6 · Dates</div>
+      <h1>When should it run?</h1>
+      <p class="lead">We've picked the earliest start that leaves time for the quality check on your video.</p>
+      <div class="card stack">
+        <div class="field"><label>Start date</label>
+          <input class="input" type="date" min=${isoDate(earliest)} value=${d.startDate} onInput=${(e) => setStart(e.target.value)} /></div>
+        <div class="field"><label>End</label>
+          <div class="chips">
+            <button class=${"chip " + (!d.endDate ? "on" : "")} onClick=${() => { set({ endDate: null }); track("end_date_mode", { mode: "weeks" }); }}>After ${d.weeks} weeks (from your budget)</button>
+            <button class=${"chip " + (d.endDate ? "on" : "")} onClick=${() => { if (!d.endDate) set({ endDate: plus(d.startDate, d.weeks * 7 - 1) }); track("end_date_mode", { mode: "date" }); }}>On a specific date</button>
+          </div></div>
+        ${d.endDate && html`
+          <div class="field"><label>End date</label>
+            <input class="input" type="date" min=${minEnd} value=${d.endDate} onInput=${(e) => { if (e.target.value >= minEnd) { set({ endDate: e.target.value }); track("end_date_changed"); } }} />
+            <div class="hint">Minimum run is 7 days. We recommend at least 4 weeks so TV has time to build up.</div></div>`}
+        <div class="notice info">Runs <b>${niceDate(d.startDate)}</b> to <b>${niceDate(endDateOf(d))}</b> (${fmtDuration(days)}). Total spend: <b>${fmtUSD(d.daily * days)}</b> at ${fmtUSD(d.daily)}/day.</div>
+        ${days < 28 && html`<div class="notice warn">Shorter than 4 weeks means fewer households reached, less often. Fine for a quick test.</div>`}
+      </div>
+    </div>`;
+}
+
+function Review({ d, editFromReview, variant, billing }) {
+  const f = forecast(d);
+  const g = GOALS.find((x) => x.id === d.goal);
+  const end = endDateOf(d);
+  const geo = d.cities.length ? d.cities.join(", ") + ", " + COUNTRIES[d.country].name
+    : d.region ? `${d.region}, ${COUNTRIES[d.country].name}` : "All of " + COUNTRIES[d.country].name;
+  const hh = [d.gender && d.gender !== "All" ? d.gender : null, d.ages.length ? d.ages.join(", ") : "All ages", d.income !== "Any" ? d.income + " income" : null, d.kids !== "Any" ? d.kids : null].filter(Boolean).join(" · ");
+  const Row = ({ k, children, edit }) => html`<div class="summary-row"><div class="k">${k}</div><div>${children}</div>${edit ? html`<button class="edit" onClick=${() => editFromReview(edit)}>Edit</button>` : html`<span></span>`}</div>`;
+  return html`
+    <div>
+      <div class="eyebrow">Step 7 · Review</div>
+      <h1>Here's your campaign</h1>
+      <p class="lead">Check everything once. ${variant === "B" ? "Payment comes next, and nothing is charged until your ads run." : "Hit launch when you're happy."}</p>
+      <div class="grid2">
+        <div class="stack">
+          <div class="card">
+            <${Row} k="Business" edit="business"><b>${d.brand.name}</b><div class="small muted">${d.brand.category}</div><//>
+            <${Row} k="Goal" edit="goal">${g.ico} ${g.t}<//>
+            <${Row} k="Where" edit="audience">${geo}<//>
+            <${Row} k="Who" edit="audience">${hh}${d.interests.length ? html`<div class="small muted">Interests: ${d.interests.join(", ")}</div>` : ""}<//>
+            <${Row} k="Dates" edit="schedule">${niceDate(d.startDate)} to ${niceDate(end)}<div class="small muted">${fmtDuration(durDays(d))}</div><//>
+            <${Row} k="Budget" edit="budget"><b>${fmtUSD(d.daily)}/day</b> · ${fmtUSD(f.total)} total<div class="small muted">${billing === "advance" ? "Paid in full on launch day. Unused budget is credited back." : "Reserved on launch day, then drawn weekly as your ads run. Pause any time."}</div><//>
+            <${Row} k="Video" edit="creative">${d.creative.status === "later" ? html`<span class="tag warn">Add before launch date</span>` : html`${d.creative.name} <span class="tag ok">Checked</span>`}<//>
+          </div>
+          <div class="card">
+            <h3>✅ Handled for you</h3>
+            <p class="small muted" style=${{ marginTop: 0 }}>Things you'd normally have to configure in an ad platform. We optimise these automatically.</p>
+            <div class="chips">${["Bidding & CPM", "Frequency caps", "Daily pacing", "TV apps & publishers", "Time of day", "Brand safety", "Device targeting"].map((x) => html`<span key=${x} class="tag grey" style=${{ padding: "6px 10px" }}>${x}</span>`)}</div>
+          </div>
+        </div>
+        <div class="stack sticky review-side">
+          <div class="tv">
+            <div class="tv-screen" style=${{ background: `linear-gradient(135deg, ${d.brand.colors[0]}, ${d.brand.colors[1]})` }}>
+              ${d.creative.url ? html`<video src=${d.creative.url} controls muted autoplay loop playsinline></video>`
+                : d.creative.status === "ok" ? html`<${AdPreview} brand=${d.brand} />`
+                : html`<div style=${{ fontSize: 16, fontWeight: 500, padding: 24, textAlign: "center" }}>Your video will play here once it's uploaded</div>`}
+            </div>
+            <div class="tv-stand"></div>
+          </div>
+          <div class="small muted" style=${{ textAlign: "center" }}>
+            ${d.creative.status === "later" ? "No video yet" : `▶ ${d.creative.name}${d.creative.url ? "" : " (sample preview)"}`}
+          </div>
+          <div class="card">
+            <div class="eyebrow">Expected results</div>
+            <div class="stat"><div class="k">Households reached</div><div class="v">${fmtNum(f.households)}</div></div>
+            <div class="stat"><div class="k">Ad plays</div><div class="v">${fmtNum(f.impressions)}</div></div>
+            <div class="small muted" style=${{ marginTop: 8 }}>${g.see}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Two confetti cannons from the bottom corners; returns a cleanup for useEffect
+function launchConfetti(colors) {
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const W = (canvas.width = innerWidth * dpr), H = (canvas.height = innerHeight * dpr);
+  const pieces = Array.from({ length: 180 }, (_, i) => {
+    const left = i % 2 === 0;
+    const angle = (left ? -60 : -120) * (Math.PI / 180) + (Math.random() - 0.5) * 0.7;
+    const speed = Math.sqrt(0.6 * innerHeight) * (0.9 + Math.random() * 0.35) * dpr; // peaks at roughly 50–100% of screen height
+    return {
+      x: left ? 0 : W, y: H * 0.95, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      w: (6 + Math.random() * 6) * dpr, h: (8 + Math.random() * 8) * dpr,
+      rot: Math.random() * Math.PI, spin: (Math.random() - 0.5) * 0.3,
+      color: colors[i % colors.length], delay: Math.random() * 200,
+    };
+  });
+  // Time-based (in 60fps "steps") so it looks the same on 60Hz and high-refresh screens
+  const DURATION = 3500, start = performance.now();
+  let last = start, raf;
+  const tick = (now) => {
+    const elapsed = now - start, k = Math.min(3, (now - last) / 16.67);
+    last = now;
+    ctx.clearRect(0, 0, W, H);
+    for (const p of pieces) {
+      if (elapsed < p.delay) continue;
+      p.vy += 0.35 * dpr * k; p.vx *= Math.pow(0.99, k); p.vy *= Math.pow(0.99, k);
+      p.x += p.vx * k; p.y += p.vy * k; p.rot += p.spin * k;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.globalAlpha = Math.max(0, 1 - elapsed / DURATION);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot)));
+      ctx.restore();
+    }
+    if (elapsed < DURATION) raf = requestAnimationFrame(tick); else canvas.remove();
+  };
+  raf = requestAnimationFrame(tick);
+  return () => { cancelAnimationFrame(raf); canvas.remove(); };
+}
+
+function Success({ d, onDashboard }) {
+  const [layout, setLayout] = useState("cards"); // prototype toggle: cards | timeline
+  useEffect(() => launchConfetti([...d.brand.colors.slice(0, 2), "#1f5bff", "#38bdf8", "#34d399", "#f59e0b"]), []);
+  const later = d.creative.status === "later";
+  const steps = [
+    { ico: "🔍", t: "Video quality check", when: later ? "Waiting for your video" : `Within ${APPROVAL_DAYS} business days`,
+      d: later ? "Upload your video and we'll check it straight away. We'll send a reminder tomorrow." : "Our team checks your ad meets TV broadcast standards. We'll email you the moment it's approved." },
+    { ico: "📺", t: "You're live", when: d.startDate ? niceDate(d.startDate) : "Soon",
+      d: "Your ad starts showing in streaming ad breaks on smart TVs in the households you picked." },
+    { ico: "📊", t: "First results", when: "3 days after launch",
+      d: 'Your first numbers appear in Campaigns, plus a 60-second "how to read your report" video in your inbox.' },
+    { ico: "📬", t: "Weekly check-ins", when: "Every Monday",
+      d: "A short summary of reach and views each week, and a full results report when the campaign ends." },
+  ];
+  return html`
+    <div class="seg-toggle">
+      <button class=${layout === "cards" ? "on" : ""} onClick=${() => setLayout("cards")}>Cards</button>
+      <button class=${layout === "timeline" ? "on" : ""} onClick=${() => setLayout("timeline")}>Timeline</button>
+    </div>
+    <div style=${{ maxWidth: layout === "cards" ? 1080 : 720, margin: "0 auto", paddingTop: 20 }}>
+      <div style=${{ fontSize: 56, textAlign: "center" }}>📺</div>
+      <h1 style=${{ textAlign: "center" }}>You're going on air!</h1>
+      <p class="lead" style=${{ textAlign: "center" }}>${d.brand.name}'s TV campaign is booked. Here's what happens next.</p>
+      ${layout === "timeline"
+        ? html`<div class="card"><ul class="timeline">
+            ${steps.map((s, i) => html`<li key=${i}><span class="dot">${i + 1}</span><div><b>${s.t}</b> <span class="small muted">· ${s.when}</span><div class="small muted">${s.d}</div></div></li>`)}
+          </ul></div>`
+        : html`<div class="step-cards">
+            ${steps.map((s, i) => html`
+              <div key=${i} class=${"card step-card" + (i === 0 ? " current" : "")}>
+                <div class="row between"><span class="step-ico">${s.ico}</span><span class="tag grey">${i + 1} of 4</span></div>
+                <h3 style=${{ margin: "16px 0 8px" }}>${s.t}</h3>
+                <span class="tag">${s.when}</span>
+                <p class="small muted" style=${{ lineHeight: 1.5, marginBottom: 0 }}>${s.d}</p>
+              </div>`)}
+          </div>`}
+      <div class="row" style=${{ justifyContent: "center", marginTop: 24 }}>
+        <button class="btn primary lg" onClick=${onDashboard}>Go to my dashboard</button>
+      </div>
+    </div>`;
+}
+
+const SCREENS = { signup: Signup, payment: Payment, welcome: Welcome, business: Business, goal: Goal, audience: Audience, budget: Budget, creative: Creative, schedule: Schedule, review: Review, success: Success };
+
+/* ---------- Signed-in app pages ---------- */
+const NAV = [["campaigns", "📣", "Campaigns"], ["library", "🎞️", "Library"], ["reporting", "📊", "Reporting"], ["admin", "👥", "Admin"]];
+
+function AppShell({ view, nav, onStart, children }) {
+  return html`
+    <div class="dash">
+      <aside class="side">
+        <div style=${{ padding: "0 8px 20px" }}><${Logo} onClick=${() => nav("home")} /></div>
+        <button class="btn primary block" style=${{ marginBottom: 18 }} onClick=${onStart}>+ Start campaign</button>
+        ${NAV.map(([k, ico, label]) => html`
+          <button key=${k} class=${"nav " + (view === k || (k === "campaigns" && view === "campaign") ? "on" : "")} onClick=${() => nav(k)}>${ico} ${label}</button>`)}
+        <div style=${{ flex: 1 }}></div>
+        <button class=${"nav " + (view === "settings" ? "on" : "")} onClick=${() => nav("settings")}>⚙️ Settings</button>
+      </aside>
+      <main class="fade" key=${view} style=${{ maxWidth: "none", margin: 0, padding: 32, minWidth: 0 }}>${children}</main>
+    </div>`;
+}
+
+function Home({ d, campaigns, onStart, openCampaign, nav }) {
+  const drafts = campaigns.filter((c) => c.status === "Draft" && c.data);
+  return html`
+    <div style=${{ maxWidth: 720, margin: "48px auto 0", textAlign: "center" }}>
+      <h1 style=${{ fontSize: 42 }}>Ready to go on air${d.brand ? `, ${d.brand.name}` : ""}?</h1>
+      <p class="lead">Launch a TV campaign in about 5 minutes. We'll guide you through every step.</p>
+      <button class="btn primary lg" onClick=${onStart}>+ Start a campaign</button>
+      <div class="chips" style=${{ justifyContent: "center", marginTop: 20 }}>
+        <button class="chip" onClick=${onStart}>🎯 Plan a budget</button>
+        <button class="chip" onClick=${onStart}>👥 Find an audience</button>
+        <button class="chip" onClick=${() => nav("campaigns")}>📊 Explain my results</button>
+      </div>
+      ${drafts.length > 0 && html`
+        <div class="card" style=${{ textAlign: "left", marginTop: 40 }}>
+          <h3>Pick up where you left off</h3>
+          ${drafts.slice(0, 3).map((c) => html`
+            <div key=${c.id} class="row between" style=${{ padding: "12px 0", borderTop: "1px solid var(--border)" }}>
+              <div><b>${c.name}</b><div class="small muted">Stopped at: ${STEP_META[c.step]?.label || c.step}</div></div>
+              <button class="btn sm" onClick=${() => openCampaign(c)}>Resume →</button>
+            </div>`)}
+        </div>`}
+    </div>`;
+}
+
+const STATUS_TAG = { Draft: "grey", "In review": "warn", "Needs video": "warn", Live: "ok", Completed: "grey", Stopped: "grey" };
+// Running campaigns (and the media in them) can't be deleted until they're stopped
+const LOCKED = ["Live", "In review", "Needs video"];
+const LOCKED_WHY = { Live: "live on TV", "In review": "booked and in review", "Needs video": "booked and waiting for a video" };
+// Booked campaigns move through review → live → completed as their dates pass
+const displayStatus = (c) => {
+  if (c.status !== "In review" || !c.startDate) return c.status;
+  const today = isoDate(new Date());
+  return today > c.endDate ? "Completed" : today >= c.startDate ? "Live" : "In review";
+};
+
+function Modal({ title, children, actions, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  return html`
+    <div class="modal-bg" onClick=${onClose}>
+      <div class="card modal" role="dialog" aria-modal="true" onClick=${(e) => e.stopPropagation()}>
+        <h2>${title}</h2>
+        <div class="muted" style=${{ lineHeight: 1.55, margin: "10px 0 22px" }}>${children}</div>
+        <div class="row" style=${{ justifyContent: "flex-end" }}>${actions}</div>
+      </div>
+    </div>`;
+}
+
+function DeleteCampaignModal({ c, close, remove, stop }) {
+  const st = displayStatus(c);
+  if (LOCKED.includes(st)) return html`
+    <${Modal} title="Stop this campaign first" onClose=${close} actions=${html`
+      <button class="btn" onClick=${close}>Cancel</button>
+      <button class="btn danger-outline" onClick=${() => stop(c.id)}>■ Stop campaign</button>`}>
+      <b>${c.name}</b> is ${LOCKED_WHY[st]}, so it can't be deleted yet. Stopping it ends delivery today and you're only billed for ads already shown. After that you can delete it.
+    <//>`;
+  return html`
+    <${Modal} title="Delete this campaign?" onClose=${close} actions=${html`
+      <button class="btn" onClick=${close}>Cancel</button>
+      <button class="btn danger" onClick=${() => remove(c)}>Delete campaign</button>`}>
+      <b>${c.name}</b> will be permanently removed. This can't be undone.${["Completed", "Stopped"].includes(st) ? " Its results will no longer appear in Reporting." : ""}
+    <//>`;
+}
+
+function Campaigns({ campaigns, onStart, openCampaign, duplicate, removeCampaign, stopCampaign, flash, setFlash }) {
+  const [confirmId, setConfirmId] = useState(null);
+  const confirming = campaigns.find((c) => c.id === confirmId);
+  return html`
+    <div>
+      <div class="row between"><h1>Campaigns</h1><span class="small muted">${campaigns.length} campaign${campaigns.length === 1 ? "" : "s"}</span></div>
+      ${flash && html`<div class="notice info row between" style=${{ margin: "12px 0 0" }}><span>${flash}</span><button class="link-btn" onClick=${() => setFlash(null)}>✕</button></div>`}
+      ${campaigns.length === 0
+        ? html`<div class="card" style=${{ textAlign: "center", padding: 48, marginTop: 16 }}>
+            <h2>No campaigns yet</h2>
+            <p class="muted">Your first TV campaign takes about 5 minutes to set up.</p>
+            <button class="btn primary lg" onClick=${onStart}>+ Start campaign</button>
+          </div>`
+        : html`<div class="card" style=${{ padding: 0, overflow: "auto", marginTop: 16 }}>
+            <table>
+              <thead><tr><th>Name</th><th>Status</th><th>Goal</th><th>Budget</th><th>Dates</th><th>Est. households</th><th></th></tr></thead>
+              <tbody>${campaigns.map((c) => {
+                const st = displayStatus(c);
+                return html`
+                  <tr key=${c.id} class="clickable" onClick=${() => openCampaign(c)} title=${st === "Draft" ? "Resume draft" : "View results"}>
+                    <td><b>${c.name}</b><div class="small muted">${st === "Draft" ? `Stopped at: ${STEP_META[c.step]?.label || c.step}` : `${c.advertiser} · ${c.creative || "No video"}`}</div></td>
+                    <td><span class=${"tag " + (STATUS_TAG[st] || "grey")}>● ${st}</span></td>
+                    <td>${c.goal ? html`<span class="tag grey">${c.goal.toUpperCase()}</span>` : "—"}</td>
+                    <td>${c.total != null ? html`${fmtUSD(c.total)} lifetime<div class="small muted">${fmtUSD(c.daily)}/day</div>` : "—"}</td>
+                    <td>${c.startDate ? html`${niceDate(c.startDate)}<div class="small muted">to ${niceDate(c.endDate)}</div>` : "—"}</td>
+                    <td>${c.households != null ? fmtNum(c.households) : "—"}</td>
+                    <td>
+                      <div class="row" style=${{ gap: 6, justifyContent: "flex-end", flexWrap: "nowrap" }}>
+                        <button class="btn sm" disabled=${!c.data} title="Duplicate campaign" onClick=${(e) => { e.stopPropagation(); duplicate(c); }}>⧉ Duplicate</button>
+                        <button class="btn sm icon" title="Delete campaign" aria-label="Delete campaign"
+                          onClick=${(e) => { e.stopPropagation(); setConfirmId(c.id); track("delete_campaign_clicked", { status: st }); }}>🗑</button>
+                      </div>
+                    </td>
+                  </tr>`;
+              })}</tbody>
+            </table>
+          </div>`}
+      ${confirming && html`<${DeleteCampaignModal} c=${confirming} close=${() => setConfirmId(null)} stop=${stopCampaign}
+        remove=${(c) => { removeCampaign(c.id); setConfirmId(null); setFlash(`Deleted "${c.name}".`); }} />`}
+    </div>`;
+}
+
+const seeded = (n) => { const x = Math.sin(n) * 10000; return x - Math.floor(x); };
+const daysBetween = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 864e5);
+const campaignDays = (c) => daysBetween(c.startDate, c.endDate) + 1;
+const dayOn = (c, iso) => Math.max(0, Math.min(campaignDays(c), daysBetween(c.startDate, iso) + 1));
+const realDayOf = (c) => dayOn(c, isoDate(new Date()));
+
+// Simulated delivery: daily plays vary around budget ÷ CPM, frequency builds over the flight
+function simulate(c, dayIn) {
+  const days = campaignDays(c);
+  const cap = c.stoppedAt ? dayOn(c, c.stoppedAt) : days;
+  const day = Math.min(dayIn, cap);
+  const daily = Array.from({ length: days }, (_, i) => (i < cap ? (c.daily / CPM) * 1000 * (0.82 + 0.3 * seeded((c.id % 9973) + i)) : 0));
+  const impressions = daily.slice(0, day).reduce((s, x) => s + x, 0);
+  const spend = Math.min(c.total, (impressions / 1000) * CPM);
+  const freq = 1.2 + (TARGET_FREQ - 1.2) * (day / days);
+  const households = day ? Math.min(c.households * 1.1, impressions / freq) : 0;
+  const vcr = 0.95 + 0.03 * seeded(c.id % 997);
+  const completed = impressions * vcr;
+  const status = c.stoppedAt && dayIn >= cap ? "Stopped"
+    : day === 0 ? (c.status === "Needs video" ? "Needs video" : "In review")
+    : day >= days ? "Completed" : "Live";
+  const goalResult = day === 0 ? null : {
+    offer: { k: "Promo redemptions", v: fmtNum(completed * 0.0011), note: "promo codes + QR scans" },
+    traffic: { k: "Site visits", v: fmtNum(households * 0.014), note: "from households that saw the ad" },
+    test: { k: "Completion vs benchmark", v: `+${((vcr - 0.9) * 100).toFixed(1)} pts`, note: "vs the ~90% TV average" },
+    aware: { k: "Planned reach delivered", v: Math.round((households / c.households) * 100) + "%", note: "of estimated households" },
+  }[c.data?.goal] || null;
+  return { days, day, daily, impressions, spend, freq, households, vcr, completed, status, goalResult };
+}
+
+function CampaignDetail({ c, back, stop, media, nav }) {
+  const [day, setDay] = useState(() => (c && c.startDate ? realDayOf(c) : 0));
+  const [confirmStop, setConfirmStop] = useState(false);
+  if (!c || !c.startDate) return html`<div><button class="link-btn" onClick=${back}>← Campaigns</button><p class="muted">This campaign has no results yet.</p></div>`;
+
+  const s = simulate(c, day);
+  const max = Math.max(1, ...s.daily);
+  const cr = c.data?.creative;
+  const asset = (cr && media.find((m) => m.id === cr.mediaId)) || cr;
+  const realStatus = displayStatus(c);
+  const goalLine = {
+    aware: "Reach is building. TV usually needs 2–3 weeks before people start to recall a brand.",
+    traffic: "Install the Airspot pixel on your site to see how many of these households visited afterwards.",
+    offer: "Compare promo-code and QR redemptions against the weeks before the campaign.",
+    test: `You're ${Math.round((s.day / s.days) * 100)}% through your test. We'll send a summary with benchmarks for your category at the end.`,
+  }[c.data?.goal] || "";
+
+  return html`
+    <div>
+      <button class="link-btn" onClick=${back}>← Campaigns</button>
+      <div class="row between" style=${{ marginTop: 8 }}>
+        <div><h1 style=${{ marginBottom: 4 }}>${c.name}</h1>
+          <div class="muted small">${c.advertiser} · ${niceDate(c.startDate)} to ${niceDate(c.endDate)} · ${fmtUSD(c.daily)}/day${c.stoppedAt ? ` · stopped ${niceDate(c.stoppedAt)}` : ""}</div></div>
+        <div class="row">
+          ${LOCKED.includes(realStatus) && html`<button class="btn sm danger-outline" onClick=${() => setConfirmStop(true)}>■ Stop campaign</button>`}
+          <span class=${"tag " + (STATUS_TAG[s.status] || "grey")} style=${{ fontSize: 13, padding: "6px 12px" }}>● ${s.status}</span>
+        </div>
+      </div>
+
+      <div class="sim">
+        <span>🧪 Prototype: simulate day</span>
+        <input type="range" min="0" max=${s.days} value=${day} onInput=${(e) => setDay(Number(e.target.value))} />
+        <b>${day} / ${s.days}</b>
+      </div>
+
+      ${s.day === 0
+        ? html`<div class="notice info" style=${{ marginTop: 16 }}>${s.status === "Stopped"
+            ? "This campaign was stopped before it started, so nothing was shown or billed."
+            : html`Your campaign starts on <b>${niceDate(c.startDate)}</b>. Results appear here from day 1, and after 3 days we'll email you a quick guide to reading them. Drag the slider to preview what that will look like.`}</div>`
+        : html`
+          <div class="kpis">
+            <div class="card"><div class="stat"><div class="k">Spend</div><div class="v">${fmtUSD(s.spend)}</div><div class="small muted">of ${fmtUSD(c.total)}</div>
+              <div class="meter"><div style=${{ width: (s.spend / c.total) * 100 + "%", background: "var(--primary)" }}></div></div></div></div>
+            <div class="card"><div class="stat"><div class="k">Households reached</div><div class="v">${fmtNum(s.households)}</div><div class="small muted">~${s.freq.toFixed(1)}× each</div></div></div>
+            <div class="card"><div class="stat"><div class="k">Ad plays</div><div class="v">${fmtNum(s.impressions)}</div><div class="small muted">~${fmtUSD(CPM)} per 1,000</div></div></div>
+            <div class="card"><div class="stat"><div class="k">Completed views</div><div class="v">${fmtNum(s.completed)}</div><div class="small muted">${(s.vcr * 100).toFixed(1)}% watched to the end</div></div></div>
+          </div>`}
+
+      <div class="detail-grid">
+        <div class="stack">
+          ${s.day > 0 && html`
+            <div class="card">
+              <h3>What this means</h3>
+              <p class="muted" style=${{ margin: 0, lineHeight: 1.6 }}>So far, <b>${fmtNum(s.households)} households</b> have seen your ad, about ${s.freq.toFixed(1)} times each.
+                ${(s.vcr * 100).toFixed(0)}% watched to the very end, above the ~90% benchmark for TV ads. ${goalLine}</p>
+              ${s.goalResult && html`<div class="notice ok" style=${{ marginTop: 12 }}><b>${s.goalResult.k}: ${s.goalResult.v}</b> <span class="small">(${s.goalResult.note})</span></div>`}
+            </div>`}
+          <div class="card">
+            <h3>Daily ad plays</h3>
+            <svg viewBox=${`0 0 ${s.days * 10} 100`} preserveAspectRatio="none" style=${{ width: "100%", height: 160, display: "block" }}>
+              ${s.daily.map((v, i) => html`<rect key=${i} x=${i * 10 + 1.5} width="7" y=${100 - (v / max) * 92} height=${(v / max) * 92} rx="1.5"
+                fill=${i < s.day ? "var(--primary)" : "#e2e8f0"} />`)}
+            </svg>
+            <div class="row between small muted" style=${{ marginTop: 6 }}><span>${niceDate(c.startDate)}</span><span>${niceDate(c.endDate)}</span></div>
+          </div>
+          <${WeeklyBreakdown} c=${c} s=${s} />
+        </div>
+
+        <div class="card">
+          <div class="row between">
+            <h3 style=${{ margin: 0 }}>Running media</h3>
+            ${asset && html`<span class=${"tag " + (s.status === "Live" ? "ok" : "grey")}>${s.status === "Live" ? "● Live in this campaign" : s.status}</span>`}
+          </div>
+          ${asset
+            ? html`
+              <div class="render-canvas" style=${{ overflow: "hidden", marginTop: 12 }}>
+                ${asset.url
+                  ? html`<video src=${asset.url} controls muted autoplay loop playsinline style=${{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }}></video>`
+                  : c.data?.brand && html`<${AdPreview} brand=${c.data.brand} />`}
+              </div>
+              <div style=${{ marginTop: 12 }}><b>${asset.name}</b></div>
+              <div class="small muted">${Math.round(asset.duration)}s · ${asset.width}×${asset.height}${asset.url ? "" : " · sample preview"}</div>
+              ${s.day > 0 && html`<div class="small muted" style=${{ marginTop: 6 }}>Played ${fmtNum(s.impressions)} times · ${(s.vcr * 100).toFixed(1)}% completion</div>`}
+              <button class="link-btn" style=${{ padding: "8px 0", marginTop: 4 }} onClick=${() => nav("library")}>View in Library →</button>`
+            : html`<p class="muted small">No video attached yet. Upload one before the start date.</p>`}
+        </div>
+      </div>
+
+      ${confirmStop && html`
+        <${Modal} title="Stop this campaign?" onClose=${() => setConfirmStop(false)} actions=${html`
+          <button class="btn" onClick=${() => setConfirmStop(false)}>Keep running</button>
+          <button class="btn danger" onClick=${() => { stop(c.id); setConfirmStop(false); }}>Stop campaign</button>`}>
+          Ads stop showing today. You're only billed for ads already shown, and the results so far stay in Reporting.
+        <//>`}
+    </div>`;
+}
+
+// One row per campaign week: matches the Monday check-in email customers get
+function WeeklyBreakdown({ c, s }) {
+  const weeks = Array.from({ length: Math.ceil(s.days / 7) }, (_, w) => {
+    const from = w * 7, to = Math.min(s.days, from + 7);
+    const shown = Math.max(0, Math.min(s.day, to) - from);
+    const plays = s.daily.slice(from, from + shown).reduce((x, v) => x + v, 0);
+    const reachSoFar = shown ? simulate(c, from + shown).households : 0;
+    const status = s.day >= to ? "Complete" : shown ? "In progress" : "Upcoming";
+    const today = new Date(addDays(new Date(c.startDate + "T12:00:00"), s.day - 1));
+    let emailDate = addDays(new Date(c.startDate + "T12:00:00"), to); // first Monday after the week ends
+    while (emailDate.getDay() !== 1) emailDate = addDays(emailDate, 1);
+    return { w, from, to, plays, spend: (plays / 1000) * CPM, reachSoFar, status, emailDate, emailSent: status === "Complete" && emailDate <= today };
+  });
+  const maxPlays = Math.max(1, ...weeks.map((wk) => s.daily.slice(wk.from, wk.to).reduce((x, v) => x + v, 0)));
+  const fmtRange = (a, b) => `${addDays(new Date(c.startDate + "T12:00:00"), a).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${addDays(new Date(c.startDate + "T12:00:00"), b - 1).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+  return html`
+    <div class="card" style=${{ padding: 0, overflow: "auto" }}>
+      <div style=${{ padding: "18px 20px 0" }}>
+        <h3 style=${{ marginBottom: 4 }}>Weekly performance</h3>
+        <p class="small muted" style=${{ margin: 0 }}>The same numbers as your Monday check-in email.</p>
+      </div>
+      <table class="weeks">
+        <thead><tr><th>Week</th><th>Status</th><th>Ad plays</th><th>Spend</th><th>Reach so far</th><th>Check-in email</th></tr></thead>
+        <tbody>${weeks.map((wk) => html`
+          <tr key=${wk.w}>
+            <td><b>Week ${wk.w + 1}</b><div class="small muted">${fmtRange(wk.from, wk.to)}</div></td>
+            <td><span class=${"tag " + (wk.status === "Complete" ? "ok" : wk.status === "In progress" ? "" : "grey")}>${wk.status}</span></td>
+            <td>${wk.plays ? fmtNum(wk.plays) : "—"}
+              <div class="meter" style=${{ width: 90 }}><div style=${{ width: (wk.plays / maxPlays) * 100 + "%", background: "var(--primary)" }}></div></div></td>
+            <td>${wk.plays ? fmtUSD(wk.spend) : "—"}</td>
+            <td>${wk.reachSoFar ? fmtNum(wk.reachSoFar) + " households" : "—"}</td>
+            <td class="small muted">${`${wk.emailSent ? "✉ Sent" : "Due"} ${wk.emailDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}`}</td>
+          </tr>`)}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ---------- Library ---------- */
+const SOURCE_LABEL = { upload: "Uploaded", generated: "Generated from brand kit", sample: "Sample" };
+
+function DeleteMediaModal({ m, used, close, remove }) {
+  const running = used.filter((c) => LOCKED.includes(displayStatus(c)));
+  if (running.length) return html`
+    <${Modal} title="This video is in use" onClose=${close} actions=${html`<button class="btn" onClick=${close}>OK</button>`}>
+      <b>${m.name}</b> is running in ${running.map((c) => c.name).join(", ")}. Stop ${running.length > 1 ? "those campaigns" : "that campaign"} before deleting it, so nothing goes off air by accident.
+    <//>`;
+  const drafts = used.filter((c) => c.status === "Draft");
+  const finished = used.length - drafts.length;
+  return html`
+    <${Modal} title="Delete this video?" onClose=${close} actions=${html`
+      <button class="btn" onClick=${close}>Cancel</button>
+      <button class="btn danger" onClick=${() => remove(m.id)}>Delete video</button>`}>
+      <b>${m.name}</b> will be removed from your library.${drafts.length ? ` ${drafts.length} draft campaign${drafts.length > 1 ? "s" : ""} will need a new video.` : ""}${finished ? " Finished campaigns keep their results." : ""}
+    <//>`;
+}
+
+function Library({ media, campaigns, addMedia, removeMedia, openCampaign }) {
+  const inputRef = useRef();
+  const [msg, setMsg] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
+  const usage = (m) => campaigns.filter((c) => c.data?.creative?.mediaId === m.id);
+  const confirming = media.find((m) => m.id === confirmId);
+  const upload = async (file) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const meta = await probeVideo(url);
+    const issues = specIssues(meta);
+    if (issues.length) { setMsg({ type: "err", text: `${file.name} wasn't added. ${issues.join(" ")}` }); track("library_upload_failed"); return; }
+    addMedia({ name: file.name, ...meta, url, source: "upload" });
+    setMsg({ type: "ok", text: `${file.name} passed the TV checks and was added to your library.` });
+  };
+  return html`
+    <div>
+      <div class="row between">
+        <h1>Library</h1>
+        <div class="row">
+          <span class="small muted">${media.length} video${media.length === 1 ? "" : "s"}</span>
+          <button class="btn primary" onClick=${() => inputRef.current.click()}>⬆ Upload</button>
+          <input ref=${inputRef} type="file" accept="video/*" style=${{ display: "none" }} onChange=${(e) => { upload(e.target.files[0]); e.target.value = ""; }} />
+        </div>
+      </div>
+      ${msg && html`<div class=${"notice row between " + msg.type} style=${{ marginTop: 12 }}><span>${msg.text}</span><button class="link-btn" onClick=${() => setMsg(null)}>✕</button></div>`}
+      ${media.length === 0
+        ? html`<div class="card" style=${{ textAlign: "center", padding: 48, marginTop: 16 }}><h2>No videos yet</h2><p class="muted">Videos you upload or generate while creating a campaign show up here.</p></div>`
+        : html`<div class="card" style=${{ padding: 0, overflow: "auto", marginTop: 16 }}>
+            <table>
+              <thead><tr><th>Video</th><th>Length</th><th>Resolution</th><th>Added</th><th>Used in</th><th></th></tr></thead>
+              <tbody>${media.map((m) => {
+                const used = usage(m);
+                return html`
+                  <tr key=${m.id}>
+                    <td><div class="row" style=${{ flexWrap: "nowrap" }}>
+                      <div class="thumb">${m.url ? html`<video src=${m.url} muted preload="metadata"></video>` : "▶"}</div>
+                      <div><b>${m.name}</b><div class="small muted">${SOURCE_LABEL[m.source] || "Uploaded"}${m.url || m.source === "sample" ? "" : " · re-upload to preview"}</div></div>
+                    </div></td>
+                    <td>${Math.round(m.duration)}s</td>
+                    <td>${m.width}×${m.height}</td>
+                    <td>${niceDate(m.addedAt)}</td>
+                    <td>${used.length
+                      ? used.map((c) => { const st = displayStatus(c); return html`
+                          <div key=${c.id} style=${{ marginBottom: 4 }}>
+                            <button class="link-btn" style=${{ padding: "2px 0" }} onClick=${() => openCampaign(c)}>${c.name}</button>
+                            <span class=${"tag " + (STATUS_TAG[st] || "grey")}>● ${st}</span>
+                          </div>`; })
+                      : html`<span class="small muted">Not used yet</span>`}</td>
+                    <td style=${{ textAlign: "right" }}>
+                      <button class="btn sm icon" title="Delete video" aria-label="Delete video" onClick=${() => { setConfirmId(m.id); track("delete_media_clicked"); }}>🗑</button>
+                    </td>
+                  </tr>`;
+              })}</tbody>
+            </table>
+          </div>`}
+      ${confirming && html`<${DeleteMediaModal} m=${confirming} used=${usage(confirming)} close=${() => setConfirmId(null)}
+        remove=${(id) => { removeMedia(id); setConfirmId(null); setMsg({ type: "info", text: `Deleted ${confirming.name}.` }); }} />`}
+    </div>`;
+}
+
+/* ---------- Reporting ---------- */
+const PALETTE = ["#1f5bff", "#14b8a6", "#f59e0b", "#a855f7", "#ef4444"];
+
+function Reporting({ campaigns, openCampaign }) {
+  const booked = campaigns.filter((c) => c.status !== "Draft" && c.startDate && c.data);
+  const start = booked.length ? booked.map((c) => c.startDate).sort()[0] : isoDate(new Date());
+  const end = booked.length ? booked.map((c) => c.endDate).sort().slice(-1)[0] : start;
+  const span = daysBetween(start, end) + 1;
+  const [filter, setFilter] = useState("all");
+  const [idx, setIdx] = useState(() => Math.max(0, Math.min(span - 1, daysBetween(start, isoDate(new Date())))));
+  if (!booked.length) return html`<div><h1>Reporting</h1><div class="card" style=${{ textAlign: "center", padding: 48, marginTop: 16 }}><h2>No results yet</h2><p class="muted">Results appear here once your first campaign is live.</p></div></div>`;
+
+  const simDate = isoDate(addDays(new Date(start + "T12:00:00"), idx));
+  const colorOf = (c) => PALETTE[booked.indexOf(c) % PALETTE.length];
+  const shown = filter === "all" ? booked : booked.filter((c) => c.id === filter);
+  const rows = shown.map((c) => ({ c, s: simulate(c, dayOn(c, simDate)) }));
+  const tot = rows.reduce((t, { s }) => ({ spend: t.spend + s.spend, hh: t.hh + s.households, imp: t.imp + s.impressions, done: t.done + s.completed }), { spend: 0, hh: 0, imp: 0, done: 0 });
+  const budget = shown.reduce((x, c) => x + c.total, 0);
+  // One stacked bar per calendar day across every campaign shown
+  const full = shown.map((c) => ({ c, daily: simulate(c, campaignDays(c)).daily, off: daysBetween(start, c.startDate) }));
+  const stacks = Array.from({ length: span }, (_, i) => full.map((f) => ({ c: f.c, v: f.daily[i - f.off] || 0 })));
+  const max = Math.max(1, ...stacks.map((st) => st.reduce((x, b) => x + b.v, 0)));
+
+  return html`
+    <div>
+      <div class="row between"><h1>Reporting</h1><span class="small muted">${booked.length} booked campaign${booked.length === 1 ? "" : "s"}</span></div>
+      <div class="chips" style=${{ marginTop: 12 }}>
+        <button class=${"chip " + (filter === "all" ? "on" : "")} onClick=${() => setFilter("all")}>All campaigns</button>
+        ${booked.map((c) => html`<button key=${c.id} class=${"chip " + (filter === c.id ? "on" : "")} onClick=${() => setFilter(c.id)}><span class="dot-l" style=${{ background: colorOf(c) }}></span>${c.name}</button>`)}
+      </div>
+
+      <div class="sim">
+        <span>🧪 Prototype: simulate date</span>
+        <input type="range" min="0" max=${span - 1} value=${idx} onInput=${(e) => setIdx(Number(e.target.value))} />
+        <b>${niceDate(simDate)}</b>
+      </div>
+
+      <div class="kpis">
+        <div class="card"><div class="stat"><div class="k">Spend</div><div class="v">${fmtUSD(tot.spend)}</div><div class="small muted">of ${fmtUSD(budget)} booked</div>
+          <div class="meter"><div style=${{ width: (tot.spend / budget) * 100 + "%", background: "var(--primary)" }}></div></div></div></div>
+        <div class="card"><div class="stat"><div class="k">Households reached</div><div class="v">${fmtNum(tot.hh)}</div><div class="small muted">across ${shown.length} campaign${shown.length === 1 ? "" : "s"}</div></div></div>
+        <div class="card"><div class="stat"><div class="k">Ad plays</div><div class="v">${fmtNum(tot.imp)}</div><div class="small muted">${tot.imp ? fmtUSD((tot.spend / tot.imp) * 1000) : "—"} per 1,000</div></div></div>
+        <div class="card"><div class="stat"><div class="k">Completion rate</div><div class="v">${tot.imp ? ((tot.done / tot.imp) * 100).toFixed(1) + "%" : "—"}</div><div class="small muted">TV average ~90%</div></div></div>
+      </div>
+
+      <div class="card" style=${{ marginTop: 16 }}>
+        <div class="row between">
+          <h3 style=${{ margin: 0 }}>Daily ad plays</h3>
+          <div class="row small muted" style=${{ gap: 14 }}>${shown.map((c) => html`<span key=${c.id}><span class="dot-l" style=${{ background: colorOf(c) }}></span>${c.goal}</span>`)}</div>
+        </div>
+        <svg viewBox=${`0 0 ${span * 10} 100`} preserveAspectRatio="none" style=${{ width: "100%", height: 180, display: "block", marginTop: 12 }}>
+          ${stacks.map((st, i) => { let y = 100; return st.map(({ c, v }, j) => { const h = (v / max) * 92; y -= h;
+            return html`<rect key=${i + "-" + j} x=${i * 10 + 1.5} width="7" y=${y} height=${h} fill=${colorOf(c)} opacity=${i <= idx ? 1 : 0.18} />`; }); })}
+          <line x1=${idx * 10 + 5} x2=${idx * 10 + 5} y1="0" y2="100" stroke="#0f172a" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" />
+        </svg>
+        <div class="row between small muted" style=${{ marginTop: 6 }}><span>${niceDate(start)}</span><span>${niceDate(end)}</span></div>
+      </div>
+
+      <div class="card" style=${{ padding: 0, overflow: "auto", marginTop: 16 }}>
+        <table>
+          <thead><tr><th>Campaign</th><th>Goal</th><th>Status</th><th>Spend</th><th>Households</th><th>Ad plays</th><th>Completion</th><th>Goal result</th></tr></thead>
+          <tbody>${rows.map(({ c, s }) => html`
+            <tr key=${c.id} class="clickable" onClick=${() => openCampaign(c)} title="View full breakdown">
+              <td><span class="dot-l" style=${{ background: colorOf(c) }}></span><b>${c.name}</b><div class="small muted">${fmtUSD(c.daily)}/day · ${niceDate(c.startDate)} to ${niceDate(c.endDate)}</div></td>
+              <td><span class="tag grey">${c.goal.toUpperCase()}</span></td>
+              <td><span class=${"tag " + (STATUS_TAG[s.status] || "grey")}>● ${s.status}</span></td>
+              <td>${fmtUSD(s.spend)}<div class="small muted">of ${fmtUSD(c.total)}</div></td>
+              <td>${fmtNum(s.households)}</td>
+              <td>${fmtNum(s.impressions)}</td>
+              <td>${s.day ? (s.vcr * 100).toFixed(1) + "%" : "—"}</td>
+              <td>${s.goalResult ? html`<b>${s.goalResult.v}</b><div class="small muted">${s.goalResult.k}</div>` : "—"}</td>
+            </tr>`)}</tbody>
+        </table>
+      </div>
+      <p class="small muted">Click a campaign for its full breakdown.</p>
+    </div>`;
+}
+
+/* ---------- Admin (placeholder roles, no real access control) ---------- */
+const CAPS = ["Launch & edit campaigns", "Manage budget & billing", "Upload & delete media", "View reports", "Manage users"];
+const ROLE_CAPS = { Owner: [1, 1, 1, 1, 1], Admin: [1, 0, 1, 1, 1], "Campaign manager": [1, 0, 1, 1, 0], Viewer: [0, 0, 0, 1, 0] };
+const DEFAULT_USERS = [
+  { id: 1, name: "Alex Andersson", email: "alex@ikea.se", role: "Owner", status: "Active", last: "Active now", you: true },
+  { id: 2, name: "Sam Lindqvist", email: "sam@ikea.se", role: "Admin", status: "Active", last: "2 hours ago" },
+  { id: 3, name: "Jordan Berg", email: "jordan@ikea.se", role: "Campaign manager", status: "Active", last: "Yesterday" },
+  { id: 4, name: "Robin Ek", email: "robin@nordicmedia.example", role: "Campaign manager", status: "Active", last: "3 days ago", note: "Agency" },
+  { id: 5, name: "Kim Nilsson", email: "kim@ikea.se", role: "Viewer", status: "Invited", last: "—" },
+];
+
+function Admin({ users, setUsers }) {
+  const [invite, setInvite] = useState(null);
+  const [removeId, setRemoveId] = useState(null);
+  const removing = users.find((u) => u.id === removeId);
+  const setRole = (id, role) => { setUsers((xs) => xs.map((u) => (u.id === id ? { ...u, role } : u))); track("user_role_changed", { role }); };
+  const validEmail = invite && /\S+@\S+\.\S+/.test(invite.email);
+  return html`
+    <div>
+      <div class="row between"><h1>Admin</h1><button class="btn primary" onClick=${() => setInvite({ email: "", role: "Campaign manager" })}>+ Invite user</button></div>
+      <div class="notice info" style=${{ marginTop: 12 }}>Placeholder: these roles are illustrative. No access control is enforced in this prototype.</div>
+
+      <div class="card" style=${{ padding: 0, overflow: "auto", marginTop: 16 }}>
+        <table>
+          <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last active</th><th></th></tr></thead>
+          <tbody>${users.map((u) => html`
+            <tr key=${u.id}>
+              <td><div class="row" style=${{ flexWrap: "nowrap" }}>
+                <span class="avatar">${u.name.split(" ").map((p) => p[0]).join("")}</span>
+                <div><b>${u.name}</b>${u.you ? html` <span class="tag grey">You</span>` : ""}${u.note ? html` <span class="tag grey">${u.note}</span>` : ""}<div class="small muted">${u.email}</div></div>
+              </div></td>
+              <td>${u.role === "Owner"
+                ? html`<b>Owner</b>`
+                : html`<select class="input" style=${{ padding: "7px 10px", width: "auto" }} value=${u.role} onChange=${(e) => setRole(u.id, e.target.value)}>
+                    ${Object.keys(ROLE_CAPS).filter((r) => r !== "Owner").map((r) => html`<option key=${r}>${r}</option>`)}
+                  </select>`}</td>
+              <td><span class=${"tag " + (u.status === "Active" ? "ok" : "warn")}>● ${u.status}</span></td>
+              <td class="muted">${u.last}</td>
+              <td style=${{ textAlign: "right" }}>${!u.you && html`<button class="btn sm icon" title="Remove user" aria-label="Remove user" onClick=${() => setRemoveId(u.id)}>✕</button>`}</td>
+            </tr>`)}</tbody>
+        </table>
+      </div>
+
+      <div class="card" style=${{ padding: 0, overflow: "auto", marginTop: 16 }}>
+        <div style=${{ padding: "18px 20px 0" }}><h3>What each role can do</h3></div>
+        <table>
+          <thead><tr><th>Permission</th>${Object.keys(ROLE_CAPS).map((r) => html`<th key=${r} style=${{ textAlign: "center" }}>${r}</th>`)}</tr></thead>
+          <tbody>${CAPS.map((cap, i) => html`
+            <tr key=${cap}><td>${cap}</td>${Object.entries(ROLE_CAPS).map(([r, caps]) => html`
+              <td key=${r} style=${{ textAlign: "center", color: caps[i] ? "var(--ok)" : "var(--subtle)", fontWeight: 600 }}>${caps[i] ? "✓" : "—"}</td>`)}</tr>`)}</tbody>
+        </table>
+      </div>
+
+      ${invite && html`
+        <${Modal} title="Invite a teammate" onClose=${() => setInvite(null)} actions=${html`
+          <button class="btn" onClick=${() => setInvite(null)}>Cancel</button>
+          <button class="btn primary" disabled=${!validEmail} onClick=${() => {
+            setUsers((xs) => [...xs, { id: Date.now(), name: invite.email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase()), email: invite.email, role: invite.role, status: "Invited", last: "—" }]);
+            track("user_invited", { role: invite.role }); setInvite(null); }}>Send invite</button>`}>
+          <div class="stack" style=${{ color: "var(--text)" }}>
+            <div class="field"><label>Email</label><input class="input" placeholder="name@company.com" value=${invite.email} onInput=${(e) => setInvite({ ...invite, email: e.target.value })} /></div>
+            <div class="field"><label>Role</label>
+              <select class="input" value=${invite.role} onChange=${(e) => setInvite({ ...invite, role: e.target.value })}>
+                ${Object.keys(ROLE_CAPS).filter((r) => r !== "Owner").map((r) => html`<option key=${r}>${r}</option>`)}
+              </select></div>
+          </div>
+        <//>`}
+
+      ${removing && html`
+        <${Modal} title="Remove this user?" onClose=${() => setRemoveId(null)} actions=${html`
+          <button class="btn" onClick=${() => setRemoveId(null)}>Cancel</button>
+          <button class="btn danger" onClick=${() => { setUsers((xs) => xs.filter((u) => u.id !== removeId)); setRemoveId(null); track("user_removed"); }}>Remove</button>`}>
+          <b>${removing.name}</b> will lose access to this account. Their campaigns stay as they are.
+        <//>`}
+    </div>`;
+}
+
+const PLACEHOLDERS = {
+  settings: { title: "Settings", ico: "⚙️", text: "Account, billing and notification preferences." },
+};
+
+function Placeholder({ page, nav }) {
+  return html`
+    <div>
+      <h1>${page.title}</h1>
+      <div class="card" style=${{ textAlign: "center", padding: 56, marginTop: 16 }}>
+        <div style=${{ fontSize: 40 }}>${page.ico}</div>
+        <h2 style=${{ marginTop: 12 }}>Placeholder page</h2>
+        <p class="muted" style=${{ maxWidth: 420, margin: "8px auto 20px" }}>${page.text}</p>
+        <button class="btn" onClick=${() => nav("campaigns")}>Go to Campaigns</button>
+      </div>
+    </div>`;
+}
+
+function ProtoPanel({ open, setOpen, variant, setVariant, billing, setBilling, events, restart, flow, go, onDashboard, clearCampaigns }) {
+  return html`
+    <button class="proto-fab" onClick=${() => setOpen(!open)}>⚙ Prototype controls</button>
+    ${open && html`
+      <div class="proto">
+        <h4>A/B: payment position</h4>
+        <div class="seg">
+          <button class=${variant === "A" ? "on" : ""} onClick=${() => setVariant("A")}>A · Card upfront</button>
+          <button class=${variant === "B" ? "on" : ""} onClick=${() => setVariant("B")}>B · Pay at launch</button>
+        </div>
+        <div style=${{ color: "#9ca3af", marginBottom: 14 }}>Switching variant restarts the flow.</div>
+        <h4>A/B: billing model</h4>
+        <div class="seg">
+          <button class=${billing === "advance" ? "on" : ""} onClick=${() => setBilling("advance")}>Pay in advance</button>
+          <button class=${billing === "progressive" ? "on" : ""} onClick=${() => setBilling("progressive")}>Bill during campaign</button>
+        </div>
+        <div style=${{ color: "#9ca3af", marginBottom: 14 }}>Changes the payment copy and summary.</div>
+        <h4>Jump to step</h4>
+        <div class="row" style=${{ gap: 6, marginBottom: 14 }}>
+          ${flow.map((s) => html`<button key=${s} class="pbtn" onClick=${() => go(s)}>${s}</button>`)}
+          <button class="pbtn" onClick=${onDashboard}>dashboard</button>
+          <button class="pbtn" onClick=${() => restart()}>↺ reset</button>
+          <button class="pbtn" onClick=${clearCampaigns}>reset demo data</button>
+        </div>
+        <h4>Tracked events (${events.length})</h4>
+        ${events.length === 0 && html`<div style=${{ color: "#6b7280" }}>No events yet.</div>`}
+        ${events.map((e, i) => html`<div class="ev" key=${i}><span>${e.t}</span> ${e.name} <span>${Object.keys(e.props).length ? JSON.stringify(e.props) : ""}</span></div>`)}
+      </div>`}`;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
+</script>
+</body>
+</html>
