@@ -43,8 +43,11 @@
   /* Supplied logo has a white wordmark, so crop to the icon and set the wordmark in dark text */
   .logo-icon { width: 34px; height: 31px; overflow: hidden; flex: none; }
   .logo-icon img { height: 31px; display: block; }
-  .swatch { position: relative; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; overflow: hidden; }
+  .swatch { display: block; position: relative; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; overflow: hidden; }
   .swatch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: 0; padding: 0; }
+  .swatch-wrap { position: relative; }
+  .swatch-x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: var(--muted); font-size: 10px; line-height: 1; padding: 0; display: grid; place-items: center; }
+  .swatch.add { display: grid; place-items: center; background: #fff; border-style: dashed; color: var(--muted); font-size: 18px; padding: 0; }
   textarea.input { resize: vertical; line-height: 1.5; min-height: 96px; }
   .logo-tile { width: 72px; height: 72px; border-radius: 16px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 26px; overflow: hidden; border: 0; padding: 0; position: relative; }
   .logo-tile img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
@@ -884,7 +887,7 @@ function Welcome({ next }) {
   const fired = useRef(new Set());
   useEffect(() => {
     if (!playing) return;
-    const id = setInterval(() => setP((x) => Math.min(100, x + 2)), 120); // ~6s demo of a 75s video
+    const id = setInterval(() => setP((x) => Math.min(100, x + 2)), 120); // ~6s demo of a 2-minute video
     return () => clearInterval(id);
   }, [playing]);
   useEffect(() => {
@@ -895,13 +898,13 @@ function Welcome({ next }) {
     <div class="narrow">
       <div class="eyebrow">Welcome to Airspot</div>
       <h1>TV advertising, made simple</h1>
-      <p class="lead">A 75-second intro to what you're buying and how the next few minutes work.</p>
+      <p class="lead">A 2-minute intro to what you're buying and how the next few minutes work.</p>
       <div class="video">
         ${!playing && p < 100 && html`<button class="play" onClick=${() => { setPlaying(true); track("intro_video_started"); }}>▶</button>`}
         ${playing && html`<div style=${{ fontSize: 18, textAlign: "center", padding: 24 }}>
           ${p < 33 ? "Connected TV = streaming apps on smart TVs (think Netflix-style ad breaks)." : p < 66 ? "You pick who sees it. We handle where it runs and how much to bid." : "Set a budget, add a video, go live. Track results in Reporting."}</div>`}
         ${p >= 100 && html`<div style=${{ textAlign: "center" }}><div style=${{ fontSize: 40 }}>✓</div>That's it! Let's set up your first campaign.</div>`}
-        <div class="vcap">${playing ? "Playing…" : p >= 100 ? "Watched" : "1:15"}</div>
+        <div class="vcap">${playing ? "Playing…" : p >= 100 ? "Watched" : "2:00"}</div>
         <div class="vbar" style=${{ width: p + "%" }}></div>
       </div>
       <div class="card" style=${{ marginTop: 24 }}>
@@ -920,6 +923,10 @@ function Welcome({ next }) {
       </div>
     </div>`;
 }
+
+// Brand colours: the first two drive the ad preview gradient, so those three defaults stay; people can add up to six.
+const MIN_COLOURS = 3, MAX_COLOURS = 6;
+const EXTRA_COLOURS = ["#111827", "#E11D48", "#16A34A", "#F97316", "#7C3AED", "#0EA5E9"];
 
 function Business({ d, set }) {
   const [loading, setLoading] = useState(!d.brand);
@@ -943,6 +950,11 @@ function Business({ d, set }) {
   const b = d.brand;
   const upd = (p) => set({ brand: { ...b, ...p } });
   const setColor = (i, v) => { const colors = [...b.colors]; colors[i] = v; upd({ colors }); };
+  const addColor = () => {
+    const c = EXTRA_COLOURS.find((x) => !b.colors.map((y) => y.toLowerCase()).includes(x.toLowerCase())) || "#000000";
+    upd({ colors: [...b.colors, c] }); track("brand_colour_added", { count: b.colors.length + 1 });
+  };
+  const removeColor = (i) => { upd({ colors: b.colors.filter((_, j) => j !== i) }); track("brand_colour_removed", { index: i }); };
   const onLogo = (file) => { if (!file) return; upd({ logoUrl: URL.createObjectURL(file) }); track("logo_uploaded"); };
   return html`
     <div class="narrow">
@@ -960,12 +972,16 @@ function Business({ d, set }) {
             <input ref=${logoRef} type="file" accept="image/*" style=${{ display: "none" }} onChange=${(e) => onLogo(e.target.files[0])} />
           </div>
           <div>
-            <div class="small muted" style=${{ marginBottom: 6 }}>Brand colours · click to change</div>
+            <div class="small muted" style=${{ marginBottom: 6 }}>Brand colours · click to change, + to add up to 6</div>
             <div class="row" style=${{ gap: 8 }}>
               ${b.colors.map((c, i) => html`
-                <label key=${i} class="swatch" style=${{ background: c }} title=${c}>
-                  <input type="color" value=${c} onInput=${(e) => setColor(i, e.target.value)} onChange=${() => track("brand_colour_changed", { index: i })} />
-                </label>`)}
+                <div key=${i} class="swatch-wrap">
+                  <label class="swatch" style=${{ background: c }} title=${c}>
+                    <input type="color" value=${c} onInput=${(e) => setColor(i, e.target.value)} onChange=${() => track("brand_colour_changed", { index: i })} />
+                  </label>
+                  ${i >= MIN_COLOURS && html`<button class="swatch-x" title="Remove colour" onClick=${() => removeColor(i)}>×</button>`}
+                </div>`)}
+              ${b.colors.length < MAX_COLOURS && html`<button class="swatch add" title="Add a colour" onClick=${addColor}>+</button>`}
             </div>
             <div class="small muted" style=${{ marginTop: 8 }}>Used in your ad preview and example video.</div>
           </div>
