@@ -294,11 +294,12 @@ const CATEGORY_KEYWORDS = [
   ["Home & living", /home|house|living|garden|furni|decor/i],
 ];
 
+// Reach KPIs only for now: each goal picks the reach number its report leads with
 const GOALS = [
-  { id: "aware", ico: "📣", t: "Get my brand known", d: "Put your business on the biggest screen in the house, in front of the right households.", see: "You'll see: households reached, completed views, frequency" },
-  { id: "traffic", ico: "🌐", t: "Drive website visits", d: "Reach households, then track how many of them visit your site afterwards.", see: "You'll see: site visits from exposed households (needs the Airspot pixel)" },
-  { id: "offer", ico: "🏷️", t: "Promote an offer or launch", d: "Tell people about a sale, an opening or a new product with a time limit.", see: "You'll see: reach plus promo-code / QR redemptions you add to the ad" },
-  { id: "test", ico: "🧪", t: "Just testing TV", d: "Try the channel with a small budget and learn what TV can do for you.", see: "You'll see: a simple test report with benchmarks for your category" },
+  { id: "reach", ico: "📺", t: "Reach more households", d: "Get your ad in front of as many of the right households as your budget allows.", see: "You'll see: households reached, as a share of your plan" },
+  { id: "frequency", ico: "🔁", t: "Be seen often", d: "Show your ad to the same households a few times so they remember you.", see: "You'll see: average frequency (times each household saw your ad)" },
+  { id: "views", ico: "▶️", t: "Get watched in full", d: "Make sure people see your whole message, not just the first few seconds.", see: "You'll see: completed views and completion rate" },
+  { id: "local", ico: "📍", t: "Cover my area", d: "Reach a big share of the households in the cities or region you serve.", see: "You'll see: share of households in your area reached" },
 ];
 
 const STEP_META = {
@@ -517,8 +518,8 @@ const INITIAL = {
   cardAdded: false,
   draftId: null,
 };
-const STORE_KEY = "airspot_proto_campaigns_v4";
-const MEDIA_KEY = "airspot_proto_media_v4";
+const STORE_KEY = "airspot_proto_campaigns_v5";
+const MEDIA_KEY = "airspot_proto_media_v5";
 
 // Two booked demo campaigns so Reporting and the Library have something to show
 function seedData() {
@@ -533,9 +534,9 @@ function seedData() {
       creative: { status: "ok", name: o.file, duration: o.dur, width: 1920, height: 1080, url: null, issues: [], mediaId: media.id } };
     return { c: { ...summarize(d, "In review", null), name: o.name, demo: true }, media };
   };
-  const live = make(1001, { name: "IKEA: Autumn kitchen offer", goal: "offer", daily: 150, weeks: 4, startOffset: -18,
+  const live = make(1001, { name: "IKEA: Autumn kitchen offer", goal: "frequency", daily: 150, weeks: 4, startOffset: -18,
     cities: ["Stockholm", "Uppsala"], file: "ikea_autumn_kitchen_30s.mp4", dur: 30 });
-  const test = make(1002, { name: "IKEA: First TV test", goal: "test", daily: 50, weeks: 4, startOffset: -45,
+  const test = make(1002, { name: "IKEA: First TV test", goal: "reach", daily: 50, weeks: 4, startOffset: -45,
     cities: ["Stockholm"], file: "ikea_brand_intro_15s.mp4", dur: 15 });
   return { campaigns: [live.c, test.c], media: [live.media, test.media] };
 }
@@ -620,7 +621,7 @@ function App() {
       const brand = d.brand || brandFromUrl(DEMO_SITE);
       const demo = {
         email: "demo@ikea.se", website: DEMO_SITE, password: "demo1234", brand,
-        goal: "test", budgetMode: "help", cardAdded: variant === "A",
+        goal: "reach", budgetMode: "help", cardAdded: variant === "A",
         creative: { status: "ok", name: "spring_promo_30s.mp4", duration: 30, width: 1920, height: 1080, url: null, issues: [] },
         startDate: isoDate(addBusinessDays(new Date(), APPROVAL_DAYS)),
       };
@@ -996,7 +997,7 @@ function Goal({ d, set }) {
             <div class="ico">${g.ico}</div><div class="t">${g.t}</div><div class="d">${g.d}</div><div class="see">${g.see}</div>
           </button>`)}
       </div>
-      <div class="notice info" style=${{ marginTop: 20 }}>💡 TV is best at getting you noticed. It doesn't track every sale the way search ads do, so we'll show you reach, views and site visits instead.</div>
+      <div class="notice info" style=${{ marginTop: 20 }}>💡 Every report shows your reach: how many households saw your ad, how often, and how many watched to the end. Your goal decides which of these leads.</div>
     </div>`;
 }
 
@@ -1613,10 +1614,10 @@ function simulate(c, dayIn) {
     : day === 0 ? (c.status === "Needs video" ? "Needs video" : "In review")
     : day >= days ? "Completed" : "Live";
   const goalResult = day === 0 ? null : {
-    offer: { k: "Promo redemptions", v: fmtNum(completed * 0.0011), note: "promo codes + QR scans" },
-    traffic: { k: "Site visits", v: fmtNum(households * 0.014), note: "from households that saw the ad" },
-    test: { k: "Completion vs benchmark", v: `+${((vcr - 0.9) * 100).toFixed(1)} pts`, note: "vs the ~90% TV average" },
-    aware: { k: "Planned reach delivered", v: Math.round((households / c.households) * 100) + "%", note: "of estimated households" },
+    reach: { k: "Households reached", v: fmtNum(households), note: `${Math.round((households / c.households) * 100)}% of the ${fmtNum(c.households)} planned` },
+    frequency: { k: "Average frequency", v: freq.toFixed(1) + "×", note: `per household, aiming for ${TARGET_FREQ}×` },
+    views: { k: "Completed views", v: fmtNum(completed), note: `${(vcr * 100).toFixed(1)}% completion, vs the ~90% TV average` },
+    local: { k: "Area coverage", v: Math.round((households / audienceSize(c.data)) * 100) + "%", note: `of the ${fmtNum(audienceSize(c.data))} households in your area` },
   }[c.data?.goal] || null;
   return { days, day, daily, impressions, spend, freq, households, vcr, completed, status, goalResult };
 }
@@ -1632,10 +1633,10 @@ function CampaignDetail({ c, back, stop, media, nav }) {
   const asset = (cr && media.find((m) => m.id === cr.mediaId)) || cr;
   const realStatus = displayStatus(c);
   const goalLine = {
-    aware: "Reach is building. TV usually needs 2–3 weeks before people start to recall a brand.",
-    traffic: "Install the Airspot pixel on your site to see how many of these households visited afterwards.",
-    offer: "Compare promo-code and QR redemptions against the weeks before the campaign.",
-    test: `You're ${Math.round((s.day / s.days) * 100)}% through your test. We'll send a summary with benchmarks for your category at the end.`,
+    reach: "Most new households are reached in the first two weeks. After that, the same households start seeing your ad again.",
+    frequency: `Each household has seen your ad ${s.freq.toFixed(1)} times so far. People usually remember a TV ad after 2–3 views.`,
+    views: "Completed views only count plays watched to the last second.",
+    local: "Coverage grows as more households in your area see the ad. Smaller areas fill up faster.",
   }[c.data?.goal] || "";
 
   return html`
