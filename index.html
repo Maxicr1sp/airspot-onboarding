@@ -132,9 +132,9 @@
 
   .video { aspect-ratio: 16/9; border-radius: 18px; overflow: hidden; position: relative; display: grid; place-items: center;
     background: radial-gradient(circle at 30% 30%, #3b82f6, #1e1b4b 70%); color: #fff; }
-  .play { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,.95); color: var(--primary); border: 0; font-size: 26px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-  .vbar { position: absolute; left: 0; bottom: 0; height: 5px; background: #38bdf8; transition: width .2s linear; }
-  .vcap { position: absolute; left: 20px; bottom: 18px; font-size: 14px; opacity: .9; }
+  .video iframe, .video .poster { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: cover; }
+  .play { position: absolute; left: 6%; bottom: 9%; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; background: rgba(255,255,255,.95); color: var(--primary); border: 0; font-size: 15px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .play:hover { background: #fff; }
 
   .tv { background: #0b0f1a; border-radius: 14px; padding: 10px; box-shadow: var(--shadow); }
   .tv-screen { aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 22px; }
@@ -256,6 +256,7 @@ const html = htm.bind(React.createElement);
 /* ---------- Assumptions (illustrative, tune with real DSP data) ---------- */
 const CPM = 32;              // USD per 1,000 impressions
 const MIN_DAILY = 50;        // Airspot minimum daily budget
+const INTRO_VIDEO = "https://www.youtube-nocookie.com/embed/dSbw0FTsLPA"; // youtu.be/dSbw0FTsLPA
 const TARGET_FREQ = 3;       // impressions per household over the flight
 const CTV_SHARE = 0.7;       // share of households reachable on CTV
 const APPROVAL_DAYS = 2;     // creative review lead time
@@ -882,33 +883,20 @@ function Payment({ d, set, variant, billing, setBilling }) {
 }
 
 function Welcome({ next }) {
-  const [p, setP] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const fired = useRef(new Set());
-  useEffect(() => {
-    if (!playing) return;
-    const id = setInterval(() => setP((x) => Math.min(100, x + 2)), 120); // ~6s demo of a 2-minute video
-    return () => clearInterval(id);
-  }, [playing]);
-  useEffect(() => {
-    [25, 50, 75, 100].forEach((q) => { if (p >= q && !fired.current.has(q)) { fired.current.add(q); track("intro_video_progress", { percent: q }); } });
-    if (p >= 100) setPlaying(false);
-  }, [p]);
   return html`
     <div class="narrow">
       <div class="eyebrow">Welcome to Airspot</div>
       <h1>TV advertising, made simple</h1>
-      <p class="lead">A 2-minute intro to what you're buying and how the next few minutes work.</p>
+      <p class="lead">A 3-minute intro to what you're buying and how the next few minutes work.</p>
       <div class="video">
-        ${!playing && p < 100 && html`<button class="play" onClick=${() => { setPlaying(true); track("intro_video_started"); }}>▶</button>`}
-        ${playing && html`<div style=${{ fontSize: 18, textAlign: "center", padding: 24 }}>
-          ${p < 33 ? "Connected TV = streaming apps on smart TVs (think Netflix-style ad breaks)." : p < 66 ? "You pick who sees it. We handle where it runs and how much to bid." : "Set a budget, add a video, go live. Track results in Reporting."}</div>`}
-        ${p >= 100 && html`<div style=${{ textAlign: "center" }}><div style=${{ fontSize: 40 }}>✓</div>That's it! Let's set up your first campaign.</div>`}
-        <div class="vcap">${playing ? "Playing…" : p >= 100 ? "Watched" : "2:00"}</div>
-        <div class="vbar" style=${{ width: p + "%" }}></div>
+        ${playing
+          ? html`<iframe src=${INTRO_VIDEO + "?autoplay=1&rel=0&modestbranding=1"} title="Airspot intro video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`
+          : html`<img class="poster" src="assets/intro-thumbnail.jpg" alt="Going live on TV in 3 minutes" />
+            <button class="play" onClick=${() => { setPlaying(true); track("intro_video_started"); }}>▶ Watch intro · 3:00</button>`}
       </div>
       <div class="card" style=${{ marginTop: 24 }}>
-        <h3>In the next ~5 minutes you'll</h3>
+        <h3>Getting your videos on TV in a few simple steps.</h3>
         <ol class="muted" style=${{ margin: 0, paddingLeft: 20, lineHeight: 1.9 }}>
           <li>Set up your brand (we've already filled it in)</li>
           <li>Pick a goal and who should see your ad</li>
@@ -918,7 +906,7 @@ function Welcome({ next }) {
         </ol>
       </div>
       <div class="row between" style=${{ marginTop: 24 }}>
-        <button class="link-btn" onClick=${() => { track("intro_video_skipped", { percent: p }); next(); }}>Skip intro</button>
+        <button class="link-btn" onClick=${() => { track("intro_video_skipped", { started: playing }); next(); }}>Skip intro</button>
         <button class="btn primary lg" onClick=${next}>Let's set up my campaign →</button>
       </div>
     </div>`;
